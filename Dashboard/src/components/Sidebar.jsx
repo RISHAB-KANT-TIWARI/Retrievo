@@ -91,17 +91,6 @@ export default function Sidebar({ open, onClose }) {
             </NavLink>
           ))}
         </nav>
-
-        <div className="mt-auto px-2 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-          <div className="flex items-center gap-2 text-[11px] text-text-secondary font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <span className="truncate">Air-Gapped Sovereign Node</span>
-          </div>
-          <div className="text-[10px] text-text-muted font-mono mt-1 flex items-center justify-between">
-            <span>Local GPU Enclave</span>
-            <span className="text-emerald-400/90 text-[9px] px-1 py-0.5 rounded bg-emerald-500/10">0 WAN</span>
-          </div>
-        </div>
       </aside>
     </>
   );

@@ -40,64 +40,23 @@ export default function Home() {
         </div>
 
         <h2
-          className="text-3xl font-semibold mb-3"
+          className="text-2xl sm:text-3xl font-semibold mb-2 leading-tight"
           style={{
             background: "linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.5))",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}
         >
-          Sovereign AI Workbench
+          Sovereign On-Premise Agentic AI Workbench
         </h2>
+        <p className="text-text-primary/90 text-sm font-medium mb-2">
+          Using Open-Weight Multimodal LLMs for Confidential Industrial Work
+        </p>
         <p className="text-text-secondary text-sm leading-relaxed max-w-3xl">
-          Air-gapped on-premises engineering intelligence for sensitive knowledge work.
-          Process Piping &amp; Instrument Diagrams (P&amp;IDs), technical specifications, vendor negotiations,
+          Air-gapped on-premises engineering intelligence for Refineries, PSUs, Defence manufacturing, and Government offices.
+          Safeguarding Piping &amp; Instrument Diagrams (P&amp;IDs), technical specifications, vendor negotiations,
           financials, and internal correspondence on local GPU hardware — with zero external network transmission.
         </p>
-      </div>
-
-      {/* ── Sovereign Enclave Proof of Air-Gap Panel ── */}
-      <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-surface border border-border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-border-soft">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🛡️</span>
-            <span className="text-text-primary text-sm font-medium">Sovereign Enclave Status</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-              Zero Outbound Telemetry
-            </span>
-          </div>
-          <span className="text-text-muted text-xs font-mono">
-            Host: Local GPU Server • Air-Gap Enforced
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-surface-2/60 border border-border-soft">
-            <p className="text-text-muted text-[11px] mb-1">Network Isolation</p>
-            <p className="text-emerald-400 font-semibold font-mono flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Air-Gapped (0 WAN)
-            </p>
-          </div>
-          <div className="p-3 rounded-xl bg-surface-2/60 border border-border-soft">
-            <p className="text-text-muted text-[11px] mb-1">Model Execution</p>
-            <p className="text-text-primary font-semibold font-mono">
-              Local Open-Weight
-            </p>
-          </div>
-          <div className="p-3 rounded-xl bg-surface-2/60 border border-border-soft">
-            <p className="text-text-muted text-[11px] mb-1">Knowledge Store</p>
-            <p className="text-text-primary font-semibold font-mono">
-              On-Device ChromaDB
-            </p>
-          </div>
-          <div className="p-3 rounded-xl bg-surface-2/60 border border-border-soft">
-            <p className="text-text-muted text-[11px] mb-1">Execution Sandbox</p>
-            <p className="text-emerald-400 font-semibold font-mono">
-              Isolated Subprocess
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* ── Headline Metrics ── */}

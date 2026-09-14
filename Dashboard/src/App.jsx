@@ -13,11 +13,11 @@ import Emails from "./pages/Emails";
 import ColdStartBanner from "./components/ColdStartBanner";
 
 const TITLES = {
-  "/": "Dashboard",
+  "/": "Sovereign AI Workbench",
   "/ask": "Ask Documents",
-  "/compliance": "Compliance Check",
-  "/documents": "Documents",
-  "/emails": "Emails",
+  "/compliance": "Compliance Audit",
+  "/documents": "Document Vault",
+  "/emails": "Internal Correspondence",
 };
 
 function Layout() {

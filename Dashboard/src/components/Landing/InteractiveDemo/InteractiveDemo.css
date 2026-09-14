@@ -1,0 +1,66 @@
+.demo {
+    padding: 8rem 1.5rem;
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.demo-heading {
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    margin-bottom: 3rem;
+}
+
+.demo-window {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.015);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    text-align: left;
+    min-height: 220px;
+}
+
+.demo-bubble {
+    padding: 0.9rem 1.2rem;
+    border-radius: 14px;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    max-width: 85%;
+}
+
+.demo-bubble--user {
+    align-self: flex-end;
+    background: rgba(76, 74, 143, 0.35);
+    color: var(--ink);
+    border: 1px solid var(--border);
+}
+
+.demo-bubble--ai {
+    align-self: flex-start;
+    background: transparent;
+    color: var(--ink-dim);
+    min-height: 1.5em;
+}
+
+.demo-status {
+    color: var(--ink-faint);
+    font-style: italic;
+}
+
+.demo-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 3px;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    animation: blink 0.9s steps(1) infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}

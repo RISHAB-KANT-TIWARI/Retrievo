@@ -1,0 +1,125 @@
+.navbar-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 1rem 0;
+    pointer-events: none;
+}
+
+.navbar-pill {
+    width: min(100%, 860px);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 0.7rem 0.9rem 0.7rem 1.1rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg,
+            rgba(20, 20, 20, 0.25),
+            rgba(20, 20, 20, 0.42));
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.5),
+        inset 0 -8px 20px rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    transition: gap 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        padding 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar-pill--shrunk {
+    gap: 1rem;
+    padding: 0.55rem 0.7rem 0.55rem 0.9rem;
+    transform: scale(0.97);
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.navbar-menu {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-dim);
+    padding: 0.3rem;
+}
+
+.navbar-menu:hover {
+    color: var(--ink);
+}
+
+.navbar-logo {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    list-style: none;
+    margin-left: auto;
+}
+
+.navbar-links a {
+    font-size: 0.9rem;
+    color: var(--ink-dim);
+    white-space: nowrap;
+    transition: color 0.25s ease;
+}
+
+.navbar-links a:hover,
+.navbar-links a.active {
+    color: var(--ink);
+}
+
+.navbar-cta {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--ink);
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.navbar-cta:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+    .navbar-wrap {
+        padding: 0.75rem 0.75rem 0;
+        z-index: 10; /* lower than the sidebar (z-40) so drawer appears above */
+    }
+
+    .navbar-pill {
+        gap: 0.75rem;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .navbar-menu {
+        display: inline-flex;
+    }
+
+    .navbar-links {
+        display: none;
+    }
+
+    .navbar-cta {
+        display: none;
+    }
+}

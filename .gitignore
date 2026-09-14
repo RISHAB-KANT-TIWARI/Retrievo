@@ -1,0 +1,30 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+
+# Backend data & secrets (session-specific, should never be committed)
+backend/.env
+backend/chroma_db/
+backend/uploaded_docs/
+backend/compliance_results/
+backend/last_compliance_check.json
+backend/workspace_owners.json
+
+# Node
+Landing/node_modules/
+Dashboard/node_modules/
+Landing/.vite/
+Dashboard/dist/
+Landing/dist/
+
+# Frontend env
+Dashboard/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

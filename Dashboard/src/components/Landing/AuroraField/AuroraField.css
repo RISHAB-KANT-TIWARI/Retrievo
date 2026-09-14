@@ -1,0 +1,51 @@
+.aurora-field {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.18;
+  will-change: transform;
+}
+
+.aurora-blob--1 {
+  width: 55vw;
+  height: 55vw;
+  max-width: 800px;
+  max-height: 800px;
+  top: -18%;
+  left: -10%;
+  background: var(--indigo);
+}
+
+.aurora-blob--2 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 650px;
+  max-height: 650px;
+  top: 10%;
+  right: -12%;
+  background: var(--teal);
+}
+
+.aurora-blob--3 {
+  width: 40vw;
+  height: 40vw;
+  max-width: 600px;
+  max-height: 600px;
+  bottom: -10%;
+  left: 25%;
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob {
+    animation: none !important;
+  }
+}

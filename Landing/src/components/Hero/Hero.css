@@ -1,0 +1,101 @@
+.hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 1.5rem 4rem;
+    position: relative;
+}
+
+.hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black, transparent 75%);
+    z-index: -1;
+}
+
+.hero-heading {
+    font-size: clamp(2.6rem, 7vw, 5.6rem);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    max-width: 16ch;
+    color: var(--ink);
+}
+
+.hero-word-mask {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding-bottom: 0.08em;
+    margin-right: 0.28em;
+}
+
+.hero-word {
+    display: inline-block;
+}
+
+.hero-sub {
+    margin: 1.6rem auto 0;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    color: var(--ink-dim);
+    max-width: 56ch;
+}
+
+.hero-cta-row {
+    margin-top: 2.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.hero-cta {
+    --mx: 50%;
+    --my: 50%;
+    position: relative;
+    overflow: hidden;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--bg);
+    background: var(--ink);
+    padding: 0.95rem 2.1rem;
+    border-radius: 999px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(140px circle at var(--mx) var(--my), rgba(139, 143, 245, 0.55), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hero-cta:hover::before {
+    opacity: 1;
+}
+
+.hero-cta:hover {
+    transform: translateY(-2px);
+}
+
+.hero-secondary {
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 2px;
+    transition: color 0.25s ease;
+}
+
+.hero-secondary:hover {
+    color: var(--ink);
+}

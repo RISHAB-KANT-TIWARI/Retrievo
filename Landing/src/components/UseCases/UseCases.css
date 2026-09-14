@@ -1,0 +1,92 @@
+.usecases {
+    padding: 8rem 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.usecases-heading {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 0.8rem;
+}
+
+.usecases-sub {
+    color: var(--ink-dim);
+    font-size: 1.05rem;
+    margin-bottom: 3.5rem;
+    max-width: 48ch;
+}
+
+.usecases-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.2rem;
+}
+
+.usecase-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem 1.6rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.usecase-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 30px rgba(139, 143, 245, 0.08);
+}
+
+.usecase-icon {
+    display: block;
+    width: 28px;
+    height: 28px;
+    margin-bottom: 1rem;
+    color: var(--accent);
+    filter: drop-shadow(0 0 6px rgba(139, 143, 245, 0.4));
+}
+
+.usecase-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.usecase-role {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+}
+
+.usecase-tasks {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.usecase-tasks li {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    padding-left: 1.1rem;
+    position: relative;
+}
+
+.usecase-tasks li::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .usecases-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    .usecases-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,151 @@
+import os
+import gc
+import pandas as pd
+from docx import Document
+from docx.document import Document as _Document
+from docx.oxml.text.paragraph import CT_P
+from docx.oxml.table import CT_Tbl
+from docx.table import Table, _Cell
+from docx.text.paragraph import Paragraph
+import pypdf
+from pdf2image import convert_from_path
+import pytesseract
+
+
+def iter_block_items(parent):
+    if isinstance(parent, _Document):
+        parent_elm = parent.element.body
+    elif isinstance(parent, _Cell):
+        parent_elm = parent._tc
+    else:
+        raise ValueError("Unsupported parent type")
+    for child in parent_elm.iterchildren():
+        if isinstance(child, CT_P):
+            yield Paragraph(child, parent)
+        elif isinstance(child, CT_Tbl):
+            yield Table(child, parent)
+
+
+def extract_docx(path):
+    doc = Document(path)
+    full_text = []
+    for block in iter_block_items(doc):
+        if isinstance(block, Paragraph):
+            if block.text.strip():
+                full_text.append(block.text)
+        elif isinstance(block, Table):
+            full_text.append("[TABLE]")
+            for row in block.rows:
+                row_text = " | ".join(cell.text.strip() for cell in row.cells)
+                full_text.append(row_text)
+            full_text.append("[/TABLE]")
+    return "\n".join(full_text)
+
+
+def extract_pdf(path):
+    reader = pypdf.PdfReader(path)
+    full_text = []
+    ocr_dpi = int(os.getenv("OCR_DPI", 250))
+
+    for i, page in enumerate(reader.pages):
+        text = page.extract_text() or ""
+
+        if len(text.strip()) < 20:
+            # Page has little/no real text — likely a scanned image, fall back to OCR
+            try:
+                images = convert_from_path(
+                    path, dpi=ocr_dpi,
+                    first_page=i + 1, last_page=i + 1
+                )
+                if images:
+                    text = pytesseract.image_to_string(images[0])
+                    del images
+                    gc.collect()
+            except Exception as e:
+                text = f"[OCR failed for this page: {e}]"
+
+        full_text.append(f"[PAGE {i+1}]\n{text}")
+
+    return "\n".join(full_text)
+
+
+def extract_txt(path):
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
+
+def extract_excel(path):
+    """
+    Returns a list of dicts — one clean dict per real row.
+    Junk columns, empty cells, and blank rows are already dropped here.
+    """
+    raw = pd.read_excel(path, header=None)
+
+    # Find the real header row: first row where most cells are non-null
+    header_row_idx = 0
+    for i in range(min(5, len(raw))):
+        non_null = raw.iloc[i].notna().sum()
+        if non_null >= len(raw.columns) * 0.6:
+            header_row_idx = i
+            break
+
+    df = pd.read_excel(path, header=header_row_idx)
+    df = df.dropna(axis=1, how="all")  # drop fully empty columns
+    df.columns = [str(c).strip() for c in df.columns]
+
+    records = []
+    for _, row in df.iterrows():
+        pairs = {}
+        for col in df.columns:
+            val = row[col]
+            if pd.isna(val) or str(val).strip() == "":
+                continue
+            if col.startswith("Unnamed"):
+                continue
+            pairs[col] = str(val).strip()
+
+        if not pairs:
+            continue
+
+        records.append(pairs)
+
+    return records
+
+
+def extract_file(path):
+    """
+    Universal entry point. Detects file type by extension,
+    returns normalized content + metadata dict.
+
+    For unstructured docs (docx/pdf/txt): content is a single string under "text".
+    For structured docs (xlsx/csv): content is a list of row-dicts under "records".
+    """
+    ext = os.path.splitext(path)[1].lower()
+
+    if ext == ".docx":
+        content = extract_docx(path)
+        doc_type = "unstructured"
+    elif ext == ".pdf":
+        content = extract_pdf(path)
+        doc_type = "unstructured"
+    elif ext in [".txt", ".md"]:
+        content = extract_txt(path)
+        doc_type = "unstructured"
+    elif ext in [".xlsx", ".xls", ".csv"]:
+        content = extract_excel(path)
+        doc_type = "structured"
+    else:
+        raise ValueError(f"Unsupported file type: {ext}")
+
+    result = {
+        "filename": os.path.basename(path),
+        "filetype": ext,
+        "doc_type": doc_type,
+    }
+
+    if doc_type == "structured":
+        result["records"] = content   # list of dicts
+    else:
+        result["text"] = content      # single string
+
+    return result

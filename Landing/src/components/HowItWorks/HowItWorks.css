@@ -1,0 +1,74 @@
+.how {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.how-track {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+    padding: 0 8vw;
+    will-change: transform;
+}
+
+.how-intro {
+    flex: 0 0 min(420px, 70vw);
+}
+
+.how-intro h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+}
+
+.how-intro p {
+    color: var(--ink-dim);
+    font-size: 1.05rem;
+}
+
+.how-card {
+    flex: 0 0 min(380px, 78vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.6rem 2.2rem;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.how-card-num {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--ink-faint);
+}
+
+.how-card h3 {
+    font-size: 1.6rem;
+}
+
+.how-card p {
+    color: var(--ink-dim);
+    font-size: 0.98rem;
+    line-height: 1.55;
+}
+
+@media (max-width: 768px) {
+    .how {
+        height: auto;
+        overflow: visible;
+    }
+
+    .how-track {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 4rem 1.5rem;
+    }
+
+    .how-card {
+        flex: none;
+        min-height: auto;
+    }
+}

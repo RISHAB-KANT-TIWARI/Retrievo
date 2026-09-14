@@ -1,0 +1,32 @@
+.workflow {
+    padding: 8rem 1.5rem;
+    max-width: 560px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.workflow-heading {
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    margin-bottom: 3rem;
+}
+
+.workflow-svg {
+    overflow: visible;
+}
+
+.workflow-node-circle {
+    fill: var(--card);
+    stroke: var(--border-strong);
+    stroke-width: 1;
+}
+
+.workflow-node-label {
+    fill: var(--ink-dim);
+    font-size: 13px;
+    font-family: var(--font-body);
+}
+
+.packet {
+    fill: var(--accent);
+    filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 16px rgba(139, 143, 245, 0.6));
+}

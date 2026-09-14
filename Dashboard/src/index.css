@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  background: #0A0A0A;
+}
+
+body {
+  font-family: -apple-system, "Inter", "Segoe UI", sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ---- Skeleton shimmer (AI "thinking" loader, doc-list loading, etc.) ---- */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #1c1c1c 0px,
+    #262626 40px,
+    #1c1c1c 80px
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* ---- Error shake (invalid states, failed requests) ---- */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.error-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* ---- Radar sweep for compliance-check "processing" state ---- */
+@keyframes radar-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.35); }
+  100% { box-shadow: 0 0 0 24px rgba(79, 70, 229, 0); }
+}
+.radar-sweep {
+  animation: radar-pulse 1.6s ease-out infinite;
+}
+
+/* Thin scrollbars to keep the dark UI clean */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }

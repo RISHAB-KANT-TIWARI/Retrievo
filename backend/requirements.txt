@@ -16,3 +16,4 @@ pdf2image
 pytesseract
 Pillow
 openpyxl
+google-genai

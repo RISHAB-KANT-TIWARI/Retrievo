@@ -95,7 +95,7 @@ export default function UploadDropzone({ onUploaded }) {
             Drag & drop a document, or click to browse
           </p>
           <p className="text-text-muted text-xs mt-1">
-            PDF, DOCX, XLSX, CSV, TXT supported
+            PDF, DOCX, XLSX, CSV, TXT, JPG, JPEG, PNG supported
           </p>
         </>
       ) : (

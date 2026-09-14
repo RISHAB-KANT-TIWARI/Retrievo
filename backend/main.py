@@ -1,8 +1,12 @@
+import requests
+from llm_api_provider import QWEN_API_URL
+from fastapi import UploadFile, File, Form
 import subprocess
 import sys
 import json
 import asyncio
 import logging
+from llm_api_provider import ask_ai
 from contextlib import asynccontextmanager
 from fastapi import FastAPI 
 from fastapi import UploadFile , File
@@ -90,17 +94,17 @@ def root():
 
 
 class AskRequest(BaseModel):
-    question : str
-    document_type : str | None = None
+    question: str
+    document_type: str | None = None
+    provider: str = "qwen"
 
 @app.post("/ask")
-def ask(req : AskRequest):
-    # Use the same filtered chunks that rag.py sends to the LLM
+def ask(req: AskRequest):
     from rag import MAX_DISTANCE
     chunks = search(req.question, filter_document_type=req.document_type)
     relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
 
-    answer = ask_with_rag(req.question, filter_document_type=req.document_type)
+    answer = ask_with_rag(req.question, filter_document_type=req.document_type, provider=req.provider)
 
     sources = [
         {
@@ -112,8 +116,100 @@ def ask(req : AskRequest):
         for c in relevant_chunks
     ]
     return {"answer": answer, "sources": sources}
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+MAX_IMAGE_SIZE = 15 * 1024 * 1024  # 15 MB
+VISION_SYSTEM_INSTRUCTION = (
+    "You are looking at an image the user has attached to their question. "
+    "Describe what you actually see in the image — objects, animals, people, "
+    "scenes, colors, text, or anything relevant — and answer the user's "
+    "question based on the image content. Do not assume the image contains "
+    "extracted document text unless it clearly does (e.g. a scanned page, "
+    "screenshot, or form)."
+)
 
 
+@app.post("/ask-image")
+def ask_image(
+    question: str = Form(...),
+    document_type: str | None = Form(None),
+    image: UploadFile = File(...),
+):
+    if not QWEN_API_URL:
+        return {"status": "error", "message": "Image chat needs the Colab vision model — QWEN_API_URL not set."}
+
+    original_filename = os.path.basename(image.filename)
+    file_ext = os.path.splitext(original_filename)[1].lower()
+
+    if file_ext not in ALLOWED_IMAGE_EXTENSIONS:
+        return {"status": "error", "message": f"Image type '{file_ext}' not allowed."}
+
+    content = image.file.read()
+    if len(content) > MAX_IMAGE_SIZE:
+        return {"status": "error", "message": "Image too large. Max size is 15 MB"}
+
+    temp_id = uuid.uuid4().hex
+    temp_path = os.path.join(UPLOAD_DIR, f"chatimg_{temp_id}_{original_filename}")
+    with open(temp_path, "wb") as f:
+        f.write(content)
+
+    sandbox_env = {
+        "PATH": os.environ.get("PATH", ""),
+        "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
+        "TEMP": os.environ.get("TEMP", ""),
+        "TMP": os.environ.get("TMP", ""),
+    }
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "sandbox_check.py", temp_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=sandbox_env,
+            cwd=BASE_DIR,
+        )
+    except subprocess.TimeoutExpired:
+        os.remove(temp_path)
+        return {"status": "error", "message": "Image took too long to process and was rejected for safety."}
+
+    if result.returncode != 0 or not result.stdout.strip():
+        print("SANDBOX STDERR:", result.stderr)
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return {"status": "error", "message": "Image processing crashed and was rejected for safety."}
+
+    try:
+        sandbox_result = json.loads(result.stdout.strip().splitlines()[-1])
+    except json.JSONDecodeError:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return {"status": "error", "message": "Unexpected sandbox output — image rejected for safety."}
+
+    if sandbox_result["status"] != "ok":
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return {"status": "error", "message": sandbox_result.get("reason", "Image rejected by security check.")}
+
+    # ---- Sandbox passed — send the ACTUAL IMAGE (not OCR text) to the vision model ----
+    try:
+        with open(temp_path, "rb") as f:
+            files = {"image": (original_filename, f, image.content_type)}
+            data = {"prompt": question, "system_instruction": VISION_SYSTEM_INSTRUCTION}
+            vision_response = requests.post(
+                f"{QWEN_API_URL}/generate-vision",
+                files=files,
+                data=data,
+                timeout=120,
+            )
+        vision_response.raise_for_status()
+        answer = vision_response.json()["response"]
+    except Exception as e:
+        return {"status": "error", "message": f"Vision model unreachable: {e}"}
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+    return {"answer": answer}
 @app.get("/documents")
 def get_documents():
     return {"documents": list_documents()}

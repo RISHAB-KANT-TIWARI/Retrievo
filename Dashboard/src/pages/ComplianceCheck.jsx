@@ -82,7 +82,10 @@ export default function ComplianceCheck() {
 
   return (
     <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-6xl">
-      <h2 className="text-xl font-medium text-text-primary mb-6">Compliance Check</h2>
+      <div className="mb-6">
+        <h2 className="text-xl font-medium text-text-primary">Technical Compliance Audit</h2>
+        <p className="text-xs text-text-muted mt-0.5">Automated specification vs. vendor submittal auditing on local GPU hardware</p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
         <div
@@ -90,8 +93,8 @@ export default function ComplianceCheck() {
           className="bg-surface border border-border rounded-2xl p-6 h-fit lg:sticky lg:top-20"
         >
           <p className="text-text-secondary text-sm mb-4">
-            Select two or more documents to compare — specifications against
-            vendor submittals, RFIs, or procurement schedules.
+            Select two or more documents to compare — technical specifications against
+            vendor submittals, equipment data, or procurement schedules.
           </p>
 
           <div className="text-xs text-text-muted mb-4 space-y-2 max-h-64 overflow-y-auto">
@@ -121,7 +124,7 @@ export default function ComplianceCheck() {
             disabled={loading || selected.length < 2}
             className="w-full py-2.5 rounded-xl bg-accent text-white text-sm disabled:opacity-50 hover:bg-accent/90 transition-colors"
           >
-            {loading ? "Checking…" : hasRun ? "Re-run Compliance Check" : "Run Compliance Check"}
+            {loading ? "Auditing…" : hasRun ? "Re-run Compliance Audit" : "Run Compliance Audit"}
           </button>
 
           {hasRun && !loading && (
@@ -145,8 +148,8 @@ export default function ComplianceCheck() {
           {!initialLoading && !hasRun && (
             <EmptyState
               icon="🛡️"
-              title="No check run yet"
-              description="Select documents and run a compliance check."
+              title="No audit executed yet"
+              description="Select documents and run a technical compliance audit."
             />
           )}
           {!initialLoading && hasRun && results.length === 0 && (

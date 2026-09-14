@@ -72,7 +72,13 @@ export default function Sidebar({ open, onClose }) {
         }}
       >
         <div className="flex items-center justify-between px-2 mb-8 mt-2">
-          <span className="text-text-primary font-semibold text-lg">EPC Intelligence</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.7)] shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-text-primary font-semibold text-base leading-tight tracking-tight">Sovereign AI</span>
+              <span className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase font-semibold">PS 26117 • Air-Gapped</span>
+            </div>
+          </div>
           <button onClick={onClose} className="lg:hidden text-text-secondary text-xl leading-none">
             ×
           </button>
@@ -85,8 +91,6 @@ export default function Sidebar({ open, onClose }) {
             </NavLink>
           ))}
         </nav>
-
-        <div className="mt-auto px-2 text-text-muted text-xs">Ironwood Point Data Center</div>
       </aside>
     </>
   );

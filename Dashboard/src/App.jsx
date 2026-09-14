@@ -13,11 +13,11 @@ import Emails from "./pages/Emails";
 import ColdStartBanner from "./components/ColdStartBanner";
 
 const TITLES = {
-  "/": "Dashboard",
+  "/": "Sovereign AI Workbench",
   "/ask": "Ask Documents",
-  "/compliance": "Compliance Check",
-  "/documents": "Documents",
-  "/emails": "Emails",
+  "/compliance": "Compliance Audit",
+  "/documents": "Document Vault",
+  "/emails": "Internal Correspondence",
 };
 
 function Layout() {
@@ -52,7 +52,7 @@ function Layout() {
           the fixed rail only at lg+ where the sidebar is always visible. */}
       <div className="lg:ml-[17rem]">
         <Navbar
-          title={TITLES[location.pathname] || "EPC Intelligence"}
+          title={TITLES[location.pathname] || "Sovereign AI Workbench"}
           onMenuClick={() => setSidebarOpen(true)}
         />
         <ColdStartBanner />

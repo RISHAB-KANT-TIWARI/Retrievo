@@ -159,9 +159,9 @@ export default function Emails() {
       {/* ── Header ── */}
       <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-medium text-text-primary">Emails</h2>
+          <h2 className="text-xl font-medium text-text-primary">Internal Communications &amp; Correspondence</h2>
           <p className="text-sm text-text-muted mt-0.5">
-            Fetch emails from your inbox and selectively ingest them into the knowledge base.
+            Fetch internal site correspondence, vendor negotiations, and RFIs from on-premises mailboxes and selectively ingest them into the sovereign knowledge base.
           </p>
         </div>
         <button

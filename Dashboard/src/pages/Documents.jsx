@@ -36,7 +36,10 @@ export default function Documents() {
 
   return (
     <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-5xl mx-auto">
-      <h2 className="text-xl font-medium text-text-primary mb-6">Documents</h2>
+      <div className="mb-6">
+        <h2 className="text-xl font-medium text-text-primary">Document Vault</h2>
+        <p className="text-xs text-text-muted mt-0.5">Air-gapped on-premises repository for P&amp;IDs, technical specifications, and vendor submittals</p>
+      </div>
 
       <UploadDropzone onUploaded={handleUploaded} />
 
@@ -45,7 +48,7 @@ export default function Documents() {
           <EmptyState
             icon="📁"
             title="No documents yet"
-            description="Upload a spec, submittal, RFI log, or schedule to get started."
+            description="Upload engineering specifications, vendor submittals, P&IDs, inspection reports, or SOPs."
           />
         )}
 

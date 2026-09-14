@@ -1,14 +1,22 @@
 from vector_store import search
 from llm_api_provider import ask_ai
 
+# L2 distance threshold: chunks above this are considered irrelevant and dropped.
+# all-MiniLM-L6-v2 with L2 distance ranges 0–2 (0=identical, 2=opposite).
+# 1.5 keeps genuinely related content while dropping clearly unrelated chunks.
+MAX_DISTANCE = float(1.5)
+
 def ask_with_rag(question: str, n_results: int = 5, filter_document_type: str = None):
     chunks = search(question, n_results=n_results, filter_document_type=filter_document_type)
 
-    if not chunks:
+    # Drop chunks that are too far (semantically unrelated)
+    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
+
+    if not relevant_chunks:
         return "No relevant information found in the documents."
 
     context_blocks = []
-    for i, c in enumerate(chunks):
+    for i, c in enumerate(relevant_chunks):
         context_blocks.append(
             f"[Source {i+1}: {c['metadata']['document_type']} — {c['metadata']['filename']}]\n{c['text']}"
         )

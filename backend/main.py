@@ -95,19 +95,23 @@ class AskRequest(BaseModel):
 
 @app.post("/ask")
 def ask(req : AskRequest):
-    chunks = search(req.question, filter_document_type = req.document_type)
-    answer = ask_with_rag(req.question, filter_document_type = req.document_type)
+    # Use the same filtered chunks that rag.py sends to the LLM
+    from rag import MAX_DISTANCE
+    chunks = search(req.question, filter_document_type=req.document_type)
+    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
+
+    answer = ask_with_rag(req.question, filter_document_type=req.document_type)
 
     sources = [
         {
-            "filename" : c["metadata"]["filename"],
+            "filename": c["metadata"]["filename"],
             "document_type": c["metadata"]["document_type"],
             "text": c["text"],
             "distance": c["distance"],
         }
-        for c in chunks
+        for c in relevant_chunks
     ]
-    return {"answer" : answer , "sources": sources}
+    return {"answer": answer, "sources": sources}
 
 
 @app.get("/documents")

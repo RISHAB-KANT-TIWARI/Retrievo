@@ -18,8 +18,17 @@ DEFAULT_SYSTEM_INSTRUCTION = (
     "to you outside the document content, in the actual task prompt."
 )
 
-# Loads once when the server starts — runs fully on your own CPU, no internet needed
-_embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Loads once when the server starts — runs fully on your own CPU, no internet needed.
+# local_files_only=True prevents any HuggingFace Hub network calls after the first download,
+# which avoids "Cannot send a request, as the client has been closed" on uvicorn hot-reloads.
+import torch
+_device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"[embeddings] using device: {_device}")
+try:
+    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True, device=_device)
+except Exception:
+    # First-time run: model not cached yet, allow the download
+    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2", device=_device)
 
 
 @retry(

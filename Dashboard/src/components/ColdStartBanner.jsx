@@ -47,10 +47,10 @@ export default function ColdStartBanner() {
     <div
       ref={bannerRef}
       style={{ opacity: 0 }} /* hidden until GSAP animates in */
-      className="mx-4 sm:mx-8 mt-4 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-4 py-3 flex items-start gap-3"
+      className="mx-4 sm:mx-8 mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.07] px-4 py-3 flex items-start gap-3"
     >
       {/* Icon */}
-      <span className="mt-0.5 shrink-0 text-amber-400">
+      <span className="mt-0.5 shrink-0 text-emerald-400">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
@@ -59,7 +59,7 @@ export default function ColdStartBanner() {
         >
           <path
             fillRule="evenodd"
-            d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+            d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
             clipRule="evenodd"
           />
         </svg>
@@ -67,18 +67,17 @@ export default function ColdStartBanner() {
 
       {/* Text */}
       <div className="flex-1 text-sm leading-relaxed">
-        <span className="font-semibold text-amber-300">Heads up — </span>
-        <span className="text-amber-100/90">
-          The demo backend runs on Render's free tier and may take 1–2 minutes
-          to wake after inactivity. If the first request is slow or briefly
-          fails, wait a moment and retry — the server is restarting.
+        <span className="font-semibold text-emerald-300">Air-Gapped Sovereign Node Active (PS 26117) — </span>
+        <span className="text-emerald-100/90">
+          Running 100% on-premises on local GPU hardware. Zero external network calls or cloud telemetry.
+          Engineering drawings, P&amp;IDs, confidential specs, and correspondence remain strictly inside this secure enclave.
         </span>
       </div>
 
       {/* Dismiss */}
       <button
         onClick={dismiss}
-        className="shrink-0 mt-0.5 text-amber-400/70 hover:text-amber-300 transition-colors"
+        className="shrink-0 mt-0.5 text-emerald-400/70 hover:text-emerald-300 transition-colors"
         aria-label="Dismiss"
       >
         <svg

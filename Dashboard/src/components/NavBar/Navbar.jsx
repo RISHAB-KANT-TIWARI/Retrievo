@@ -7,9 +7,10 @@ const DEFAULT_LINKS = [
   { label: "Ask", to: "/ask" },
   { label: "Compliance", to: "/compliance" },
   { label: "Documents", to: "/documents" },
+  { label: "Emails", to: "/emails" },
 ];
 
-export default function Navbar({ title = "EPC Intelligence", onMenuClick, links = DEFAULT_LINKS }) {
+export default function Navbar({ title = "Sovereign AI Workbench", onMenuClick, links = DEFAULT_LINKS }) {
   const [shrunk, setShrunk] = useState(false);
   const pillRef = useRef(null);
 

@@ -5,7 +5,7 @@ import EmptyState from "../components/EmptyState";
 import { askQuestion } from "../api/client";
 import { useToast } from "../components/Toast";
 
-const DOC_TYPES = ["All", "Specification", "Vendor Submittal", "RFI", "Procurement Schedule"];
+const DOC_TYPES = ["All", "Specification", "Vendor Submittal", "RFI", "Procurement Schedule", "Email"];
 
 /**
  * BACKEND NOTE: calls POST /ask on submit. See api/client.js askQuestion()
@@ -55,7 +55,10 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   return (
     <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-3xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-medium text-text-primary">Ask Documents</h2>
+        <div>
+          <h2 className="text-xl font-medium text-text-primary">Ask Documents</h2>
+          <p className="text-xs text-text-muted mt-0.5">Air-Gapped Grounded Retrieval • Local GPU Inference</p>
+        </div>
         <select
           value={docType}
           onChange={(e) => setDocType(e.target.value)}
@@ -73,8 +76,8 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
         {messages.length === 0 && !loading && (
           <EmptyState
             icon="💬"
-            title="Ask anything about the project"
-            description='Try: "What is the battery backup requirement?"'
+            title="Query Sovereign Knowledge Base"
+            description='Grounded in local specs, P&IDs, vendor submittals, and correspondence. Try: "What battery backup runtime does the specification require?"'
           />
         )}
 
@@ -91,7 +94,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a question about the project documents…"
+          placeholder="Ask a question grounded in local specs, P&IDs, submittals, or correspondence…"
           className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50 transition-colors"
         />
         <button

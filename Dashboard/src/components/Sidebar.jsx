@@ -72,7 +72,13 @@ export default function Sidebar({ open, onClose }) {
         }}
       >
         <div className="flex items-center justify-between px-2 mb-8 mt-2">
-          <span className="text-text-primary font-semibold text-lg">EPC Intelligence</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.7)] shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-text-primary font-semibold text-base leading-tight tracking-tight">Sovereign AI</span>
+              <span className="text-[10px] text-emerald-400 font-mono tracking-wider uppercase font-semibold">PS 26117 • Air-Gapped</span>
+            </div>
+          </div>
           <button onClick={onClose} className="lg:hidden text-text-secondary text-xl leading-none">
             ×
           </button>
@@ -86,7 +92,16 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="mt-auto px-2 text-text-muted text-xs">Ironwood Point Data Center</div>
+        <div className="mt-auto px-2 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="flex items-center gap-2 text-[11px] text-text-secondary font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <span className="truncate">Air-Gapped Sovereign Node</span>
+          </div>
+          <div className="text-[10px] text-text-muted font-mono mt-1 flex items-center justify-between">
+            <span>Local GPU Enclave</span>
+            <span className="text-emerald-400/90 text-[9px] px-1 py-0.5 rounded bg-emerald-500/10">0 WAN</span>
+          </div>
+        </div>
       </aside>
     </>
   );

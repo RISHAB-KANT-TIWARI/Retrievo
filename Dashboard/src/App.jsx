@@ -52,7 +52,7 @@ function Layout() {
           the fixed rail only at lg+ where the sidebar is always visible. */}
       <div className="lg:ml-[17rem]">
         <Navbar
-          title={TITLES[location.pathname] || "EPC Intelligence"}
+          title={TITLES[location.pathname] || "Sovereign AI Workbench"}
           onMenuClick={() => setSidebarOpen(true)}
         />
         <ColdStartBanner />

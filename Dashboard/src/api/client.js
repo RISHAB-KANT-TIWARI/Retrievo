@@ -127,4 +127,20 @@ export const getStats = () => client.get("/stats");
 export const deleteDocument = (documentId) =>
   client.delete(`/documents/${encodeURIComponent(documentId)}`);
 
+/**
+ * ---- 7. EMAIL INTEGRATION ----
+ * GET  /emails           → list all fetched emails (not necessarily ingested)
+ * POST /email/sync       → manually trigger an IMAP sync
+ * POST /email/ingest/:uid → ingest a specific email body + attachments into ChromaDB
+ * GET  /email/status     → last sync time, total fetched/ingested, errors
+ */
+export const getEmails = () => client.get("/emails");
+
+export const syncEmails = () => client.post("/email/sync");
+
+export const ingestEmail = (uid) =>
+  client.post(`/email/ingest/${encodeURIComponent(uid)}`);
+
+export const getEmailStatus = () => client.get("/email/status");
+
 export default client;

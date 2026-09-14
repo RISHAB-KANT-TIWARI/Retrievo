@@ -14,6 +14,7 @@ const COLORS = {
   RFI: "bg-purple-500/15 text-purple-300 border-purple-500/30",
   "Procurement Schedule": "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
   "Commissioning Record": "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  Email: "bg-rose-500/15 text-rose-300 border-rose-500/30",
   Unknown: "bg-white/10 text-text-secondary border-white/10",
 };
 

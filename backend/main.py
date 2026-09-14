@@ -1,6 +1,9 @@
 import subprocess
 import sys
 import json
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI 
 from fastapi import UploadFile , File
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,13 +17,50 @@ from vector_store import list_documents, delete_document
 from vector_store import get_stats
 from chunker import chunk_document
 from exctractors import extract_file
+from email_ingest import sync_emails, ingest_email, list_emails, get_email_status
 import uuid
 import os 
 import shutil
 from compilance import save_compliance_results , load_compliance_results
+from dotenv import load_dotenv
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+EMAIL_POLL_INTERVAL = int(os.getenv("EMAIL_POLL_INTERVAL_MINUTES", "5")) * 60  # seconds
 
 
-app = FastAPI(title="EPC Intelligence API")
+async def _email_poll_loop():
+    """Background task: sync new emails from IMAP every EMAIL_POLL_INTERVAL seconds."""
+    logger.info("Email poller started (interval=%ds)", EMAIL_POLL_INTERVAL)
+    while True:
+        try:
+            result = sync_emails()
+            if result["fetched"] > 0:
+                logger.info("Email sync: fetched %d new email(s)", result["fetched"])
+            if result["errors"]:
+                logger.warning("Email sync errors: %s", result["errors"])
+        except Exception:
+            logger.exception("Unhandled error in email poll loop")
+        await asyncio.sleep(EMAIL_POLL_INTERVAL)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start background tasks on startup, cancel on shutdown."""
+    poll_task = asyncio.create_task(_email_poll_loop())
+    try:
+        yield
+    finally:
+        poll_task.cancel()
+        try:
+            await poll_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="EPC Intelligence API", lifespan=lifespan)
 
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -55,19 +95,23 @@ class AskRequest(BaseModel):
 
 @app.post("/ask")
 def ask(req : AskRequest):
-    chunks = search(req.question, filter_document_type = req.document_type)
-    answer = ask_with_rag(req.question, filter_document_type = req.document_type)
+    # Use the same filtered chunks that rag.py sends to the LLM
+    from rag import MAX_DISTANCE
+    chunks = search(req.question, filter_document_type=req.document_type)
+    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
+
+    answer = ask_with_rag(req.question, filter_document_type=req.document_type)
 
     sources = [
         {
-            "filename" : c["metadata"]["filename"],
+            "filename": c["metadata"]["filename"],
             "document_type": c["metadata"]["document_type"],
             "text": c["text"],
             "distance": c["distance"],
         }
-        for c in chunks
+        for c in relevant_chunks
     ]
-    return {"answer" : answer , "sources": sources}
+    return {"answer": answer, "sources": sources}
 
 
 @app.get("/documents")
@@ -144,6 +188,7 @@ def upload_document(file: UploadFile = File(...)):
         return {"status": "error", "message": sandbox_result.get("reason", "File rejected by security check.")}
 
     extracted = sandbox_result["data"]
+    extracted["filename"] = original_filename
     # ---- END SANDBOX ----
 
     chunks = chunk_document(extracted, document_id=document_id, stored_filename=stored_filename)
@@ -198,3 +243,34 @@ def stats():
         "total_chunks": doc_data["total_chunks"],
         "deviations_found": deviations,
     }
+
+
+# ── Email endpoints ───────────────────────────────────────────────────────────
+
+@app.get("/emails")
+def get_emails():
+    """Return all fetched (but not necessarily ingested) emails."""
+    return {"emails": list_emails()}
+
+
+@app.post("/email/sync")
+def email_sync():
+    """Manually trigger an IMAP sync to fetch new emails."""
+    result = sync_emails()
+    return result
+
+
+@app.post("/email/ingest/{uid}")
+def email_ingest(uid: str):
+    """
+    Ingest a specific email (by IMAP UID) into ChromaDB.
+    Processes both the email body text and any allowed attachments.
+    """
+    result = ingest_email(uid)
+    return result
+
+
+@app.get("/email/status")
+def email_status():
+    """Return email sync status: last sync time, total fetched/ingested, errors."""
+    return get_email_status()

@@ -74,7 +74,9 @@ def chunk_structured(records, doc_type_label, project_name):
 
 def classify_doc_type(filename, text=""):
     fname = filename.lower()
-    if "spec" in fname:
+    if fname.startswith("email:") or fname.startswith("email_"):
+        return "Email"
+    elif "spec" in fname:
         return "Specification"
     elif "submittal" in fname:
         return "Vendor Submittal"

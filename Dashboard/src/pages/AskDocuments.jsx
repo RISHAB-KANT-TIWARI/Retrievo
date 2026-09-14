@@ -12,10 +12,8 @@ const DOC_TYPES = ["All", "Specification", "Vendor Submittal", "RFI", "Procureme
  * for the exact request/response contract. `sources` in the response is
  * what powers the citation chips under each AI message.
  */
-export default function AskDocuments() {
-  const [messages, setMessages] = useState([]);
+export default function AskDocuments({ messages, setMessages, docType, setDocType }) {
   const [input, setInput] = useState("");
-  const [docType, setDocType] = useState("All");
   const [loading, setLoading] = useState(false);
   const toast = useToast();
   const scrollRef = useRef(null);

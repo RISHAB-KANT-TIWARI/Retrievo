@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import AskDocuments from "./pages/AskDocuments";
 import ComplianceCheck from "./pages/ComplianceCheck";
 import Documents from "./pages/Documents";
+import Emails from "./pages/Emails";
 import ColdStartBanner from "./components/ColdStartBanner";
 
 const TITLES = {
@@ -16,12 +17,17 @@ const TITLES = {
   "/ask": "Ask Documents",
   "/compliance": "Compliance Check",
   "/documents": "Documents",
+  "/emails": "Emails",
 };
 
 function Layout() {
   const location = useLocation();
   const contentRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Chat state lives here so it survives route changes
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatDocType, setChatDocType] = useState("All");
 
   useGSAP(
     () => {
@@ -53,9 +59,20 @@ function Layout() {
         <div ref={contentRef}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/ask" element={<AskDocuments />} />
+            <Route
+              path="/ask"
+              element={
+                <AskDocuments
+                  messages={chatMessages}
+                  setMessages={setChatMessages}
+                  docType={chatDocType}
+                  setDocType={setChatDocType}
+                />
+              }
+            />
             <Route path="/compliance" element={<ComplianceCheck />} />
             <Route path="/documents" element={<Documents />} />
+            <Route path="/emails" element={<Emails />} />
           </Routes>
         </div>
       </div>

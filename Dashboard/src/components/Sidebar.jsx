@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/ask", label: "Ask Documents" },
   { to: "/compliance", label: "Compliance Check" },
   { to: "/documents", label: "Documents" },
+  { to: "/emails", label: "Emails" },
 ];
 
 /**

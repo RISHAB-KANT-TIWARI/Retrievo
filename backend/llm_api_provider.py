@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-load_dotenv()
+load_dotenv(override=True)
 
 QWEN_API_URL = os.getenv("QWEN_API_URL")
 
@@ -30,15 +30,34 @@ _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 def ask_ai(prompt: str, system_instruction: str = DEFAULT_SYSTEM_INSTRUCTION) -> str:
     """
     Single entry point for all AI calls in the project.
-    Calls the Qwen model running on Google Colab, via the ngrok tunnel.
+
+    Auto-switches based on .env:
+      - QWEN_API_URL set  → uses Colab/ngrok Qwen endpoint
+      - QWEN_API_URL unset → uses local Ollama (OLLAMA_MODEL, default qwen2.5:3b)
     """
-    response = requests.post(
-        f"{QWEN_API_URL}/generate",
-        json={"prompt": prompt, "system_instruction": system_instruction},
-        timeout=120,
-    )
-    response.raise_for_status()
-    return response.json()["response"]
+    if QWEN_API_URL:
+        # ── Colab / ngrok mode ──────────────────────────────────────────────
+        response = requests.post(
+            f"{QWEN_API_URL}/generate",
+            json={"prompt": prompt, "system_instruction": system_instruction},
+            timeout=120,
+        )
+        response.raise_for_status()
+        return response.json()["response"]
+    else:
+        # ── Local Ollama mode ───────────────────────────────────────────────
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),
+                "prompt": prompt,
+                "system": system_instruction,
+                "stream": False,
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+        return response.json()["response"]
 
 
 def embed_text(text: str) -> list[float]:

@@ -6,10 +6,8 @@ from llm_api_provider import ask_ai
 # 1.5 keeps genuinely related content while dropping clearly unrelated chunks.
 MAX_DISTANCE = float(1.5)
 
-def ask_with_rag(question: str, n_results: int = 5, filter_document_type: str = None):
+def ask_with_rag(question: str, n_results: int = 5, filter_document_type: str = None, provider: str = "qwen"):
     chunks = search(question, n_results=n_results, filter_document_type=filter_document_type)
-
-    # Drop chunks that are too far (semantically unrelated)
     relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
 
     if not relevant_chunks:
@@ -31,8 +29,7 @@ QUESTION: {question}
 
 ANSWER (cite sources like [Source 1], [Source 2]):"""
 
-    return ask_ai(prompt)
-
+    return ask_ai(prompt, provider=provider)
 
 if __name__ == "__main__":
     question = "What is the battery backup requirement, and does the vendor submittal match it?"

@@ -12,6 +12,9 @@ MAGIC_BYTES = {
     ".docx": [b"PK"],
     ".xlsx": [b"PK"],
     ".xls": [b"\xD0\xCF\x11\xE0"],
+    ".jpg": [b"\xFF\xD8\xFF"],
+    ".jpeg": [b"\xFF\xD8\xFF"],
+    ".png": [b"\x89PNG\r\n\x1a\n"],
 }
 
 
@@ -57,6 +60,9 @@ def main():
             "status": "rejected",
             "reason": "File expands to a suspiciously large size and was rejected."
         }))
+        return
+    if ext in (".jpg", ".jpeg", ".png"):
+        print(json.dumps({"status": "ok"}))
         return
 
     try:

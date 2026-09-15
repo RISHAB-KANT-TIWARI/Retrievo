@@ -35,7 +35,7 @@ def add_chunks(chunks: list[dict]):
     )
 
 
-def search(query: str, n_results: int = 5, filter_document_type: str = None):
+def search(query: str, n_results: int = 8, filter_document_type: str = None):
     query_embedding = embed_text(query)
     where_filter = {"document_type": filter_document_type} if filter_document_type else None
 

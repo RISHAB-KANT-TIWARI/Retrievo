@@ -35,9 +35,20 @@ const client = axios.create({
  * also returning the raw `chunks` you retrieved in rag.py's
  * ask_with_rag() so the UI can show real citations instead of just text.
  */
-export const askQuestion = (question, documentType = null) =>
-  client.post("/ask", { question, document_type: documentType });
 
+export const askQuestion = (question, documentType = null, provider = "qwen") =>
+  client.post("/ask", { question, document_type: documentType, provider });
+
+export const askImageQuestion = (question, imageFile, documentType = null) => {
+  const formData = new FormData();
+  formData.append("question", question);
+  formData.append("image", imageFile);
+  if (documentType) formData.append("document_type", documentType);
+  return client.post("/ask-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 120000,
+  });
+};
 /**
  * ---- 2. COMPLIANCE CHECK ----
  * Expected FastAPI endpoint: POST /compliance-check

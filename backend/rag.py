@@ -6,7 +6,7 @@ from llm_api_provider import ask_ai
 # 1.5 keeps genuinely related content while dropping clearly unrelated chunks.
 MAX_DISTANCE = float(1.5)
 
-def ask_with_rag(question: str, n_results: int = 5, filter_document_type: str = None, provider: str = "qwen"):
+def ask_with_rag(question: str, n_results: int = 8, filter_document_type: str = None, provider: str = "qwen"):
     chunks = search(question, n_results=n_results, filter_document_type=filter_document_type)
     relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
 

@@ -1,5 +1,5 @@
 import requests
-from llm_api_provider import QWEN_API_URL
+from llm_api_provider import QWEN_API_URL, ask_vision
 from fastapi import UploadFile, File, Form
 import subprocess
 import sys
@@ -134,8 +134,7 @@ def ask_image(
     document_type: str | None = Form(None),
     image: UploadFile = File(...),
 ):
-    if not QWEN_API_URL:
-        return {"status": "error", "message": "Image chat needs the Colab vision model — QWEN_API_URL not set."}
+    # Vision works with either remote Qwen or local Ollama — no guard needed
 
     original_filename = os.path.basename(image.filename)
     file_ext = os.path.splitext(original_filename)[1].lower()
@@ -192,19 +191,9 @@ def ask_image(
 
     # ---- Sandbox passed — send the ACTUAL IMAGE (not OCR text) to the vision model ----
     try:
-        with open(temp_path, "rb") as f:
-            files = {"image": (original_filename, f, image.content_type)}
-            data = {"prompt": question, "system_instruction": VISION_SYSTEM_INSTRUCTION}
-            vision_response = requests.post(
-                f"{QWEN_API_URL}/generate-vision",
-                files=files,
-                data=data,
-                timeout=120,
-            )
-        vision_response.raise_for_status()
-        answer = vision_response.json()["response"]
+        answer = ask_vision(question, temp_path, system_instruction=VISION_SYSTEM_INSTRUCTION)
     except Exception as e:
-        return {"status": "error", "message": f"Vision model unreachable: {e}"}
+        return {"status": "error", "message": f"Vision model error: {e}"}
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)

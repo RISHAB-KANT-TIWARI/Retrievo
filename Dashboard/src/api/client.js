@@ -36,8 +36,8 @@ const client = axios.create({
  * ask_with_rag() so the UI can show real citations instead of just text.
  */
 
-export const askQuestion = (question, documentType = null, provider = "qwen") =>
-  client.post("/ask", { question, document_type: documentType, provider });
+export const askQuestion = (question, documentType = null, provider = "qwen", documentId = null) =>
+  client.post("/ask", { question, document_type: documentType, provider, document_id: documentId });
 
 export const askImageQuestion = (question, imageFile, documentType = null) => {
   const formData = new FormData();
@@ -155,3 +155,10 @@ export const ingestEmail = (uid) =>
 export const getEmailStatus = () => client.get("/email/status");
 
 export default client;
+
+
+export const agentAsk = (message, provider = "qwen") =>
+  client.post("/agent/ask", { message, provider });
+
+export const agentDeleteConfirmed = (documentIds) =>
+  client.post("/agent/delete-confirmed", { document_ids: documentIds });

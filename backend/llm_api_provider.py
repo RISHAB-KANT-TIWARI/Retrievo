@@ -30,10 +30,9 @@ import torch
 _device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"[embeddings] using device: {_device}")
 try:
-    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True, device=_device)
+    _embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5", local_files_only=True, device=_device)
 except Exception:
-    _embedding_model = SentenceTransformer("all-MiniLM-L6-v2", device=_device)
-
+    _embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5", device=_device)
 
 @retry(
     stop=stop_after_attempt(3),

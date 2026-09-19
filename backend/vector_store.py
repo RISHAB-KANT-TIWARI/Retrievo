@@ -96,3 +96,20 @@ def delete_document(document_id: str):
     not filename) from ChromaDB.
     """
     _collection.delete(where={"document_id": document_id})
+
+def get_document_chunks(document_id: str):
+    """
+    Returns ALL chunks of one specific document (no semantic search) —
+    used when the user has explicitly selected a single document to
+    ask about, so nothing gets missed.
+    """
+    data = _collection.get(
+        where={"document_id": document_id},
+        include=["documents", "metadatas"],
+    )
+
+    items = list(zip(data["ids"], data["documents"], data["metadatas"]))
+    # chunk_id format is "{document_id}_{index}" — sort by that index
+    items.sort(key=lambda x: int(x[0].split("_")[-1]))
+
+    return [{"text": text, "metadata": meta} for _, text, meta in items]

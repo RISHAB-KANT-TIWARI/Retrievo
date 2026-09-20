@@ -61,9 +61,9 @@ def main():
             "reason": "File expands to a suspiciously large size and was rejected."
         }))
         return
-    if ext in (".jpg", ".jpeg", ".png"):
-        print(json.dumps({"status": "ok"}))
-        return
+    # if ext in (".jpg", ".jpeg", ".png"):
+    #     print(json.dumps({"status": "ok"}))
+    #     return
 
     try:
         extracted = extract_file(file_path)

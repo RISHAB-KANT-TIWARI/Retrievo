@@ -331,7 +331,7 @@ UPLOAD_DIR = os.getenv(
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md", ".jpg", ".jpeg", ".png"}
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
 

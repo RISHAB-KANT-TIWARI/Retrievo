@@ -59,7 +59,7 @@ def ask_ai(prompt: str, system_instruction: str = DEFAULT_SYSTEM_INSTRUCTION, pr
         response = requests.post(
             f"{QWEN_API_URL}/generate",
             json={"prompt": prompt, "system_instruction": system_instruction},
-            timeout=120,
+            timeout=350,
         )
         response.raise_for_status()
         return response.json()["response"]

@@ -1,5 +1,7 @@
 import re
 import difflib
+from datetime import datetime, timezone
+from fastapi.responses import FileResponse
 import requests
 from llm_api_provider import QWEN_API_URL, ask_vision, ask_ai
 from fastapi import UploadFile, File, Form
@@ -17,7 +19,7 @@ from compilance import run_compliance_check
 from vector_store import add_chunks
 from vector_store import search
 from vector_store import _collection
-from vector_store import list_documents, delete_document
+from vector_store import list_documents, delete_document, get_document_chunks
 from vector_store import get_stats
 from chunker import chunk_document
 from exctractors import extract_file
@@ -229,6 +231,7 @@ def agent_delete_confirmed(req: DeleteConfirmedRequest):
                 os.remove(file_path)
         if match:
             deleted.append(match["filename"])
+    log_action("agent_delete", {"document_ids": req.document_ids, "deleted": deleted})
     return {"status": "success", "deleted": deleted}
 
 
@@ -320,7 +323,12 @@ def ask_image(
 def get_documents():
     return {"documents": list_documents()}
 
-
+@app.get("/documents/{document_id}/content")
+def get_document_content(document_id: str):
+    chunks = get_document_chunks(document_id)
+    if not chunks:
+        return {"status": "error", "message": "Document not found"}
+    return {"text": "\n\n".join(c["text"] for c in chunks)}
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 UPLOAD_DIR = os.getenv(
@@ -329,9 +337,28 @@ UPLOAD_DIR = os.getenv(
 )
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+@app.get("/documents/{document_id}/file")
+def get_document_file(document_id: str):
+    docs = list_documents()
+    match = next((d for d in docs if d["document_id"] == document_id), None)
+    if not match or not match.get("stored_filename"):
+        return {"status": "error", "message": "File not found"}
+    file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
+    if not os.path.exists(file_path):
+        return {"status": "error", "message": "File missing on disk"}
+    return FileResponse(
+        file_path,
+        headers={"Content-Disposition": f'inline; filename="{match["filename"]}"'},
+    )
 
+AUDIT_LOG_PATH = os.path.join(BASE_DIR, "audit_log.jsonl")
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md", ".jpg", ".jpeg", ".png"}
+def log_action(action: str, details: dict):
+    entry = {"time": datetime.now(timezone.utc).isoformat(), "action": action, "details": details}
+    with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md", ".jpg", ".jpeg", ".png",".zip"}
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
 
@@ -399,6 +426,7 @@ def upload_document(file: UploadFile = File(...)):
 
     add_chunks(chunks)
 
+    log_action("upload", {"document_id": document_id, "filename": original_filename, "chunks": len(chunks)})
     return {
         "filename": original_filename,
         "document_id": document_id,
@@ -419,7 +447,7 @@ def remove_document(document_id: str):
         file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
         if os.path.exists(file_path):
             os.remove(file_path)
-
+    log_action("delete", {"document_id": document_id, "filename": match["filename"] if match else None})
     return {"status": "success", "message": "Document removed"}
 
 
@@ -450,6 +478,13 @@ def stats():
         "deviations_found": deviations,
     }
 
+@app.get("/audit-log")
+def get_audit_log(limit: int = 50):
+    if not os.path.exists(AUDIT_LOG_PATH):
+        return {"logs": []}
+    with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+        lines = f.readlines()[-limit:]
+    return {"logs": [json.loads(l) for l in lines]}
 
 @app.get("/emails")
 def get_emails():

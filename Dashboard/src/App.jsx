@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import FileViewer from "./pages/FileViewer";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ToastProvider } from "./components/Toast";
@@ -73,6 +74,7 @@ function Layout() {
             <Route path="/compliance" element={<ComplianceCheck />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/emails" element={<Emails />} />
+            <Route path="/view/:documentId" element={<FileViewer />} />
           </Routes>
         </div>
       </div>

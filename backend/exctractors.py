@@ -1,3 +1,6 @@
+import tempfile
+import uuid
+import zipfile
 import os
 import gc
 import pandas as pd
@@ -12,6 +15,9 @@ from pdf2image import convert_from_path
 from PIL import Image
 import pytesseract
 
+
+MAX_ZIP_ENTRIES = 20
+MAX_ENTRY_SIZE = 10 * 1024 * 1024  
 
 def iter_block_items(parent):
     if isinstance(parent, _Document):
@@ -154,6 +160,39 @@ def extract_file(path):
     elif ext in [".xlsx", ".xls", ".csv"]:
         content = extract_excel(path)
         doc_type = "structured"
+    elif ext == ".zip":
+        texts = []
+        with zipfile.ZipFile(path) as z:
+            entries = [i for i in z.infolist() if not i.is_dir()]
+            if len(entries) > MAX_ZIP_ENTRIES:
+                raise ValueError(f"Zip has too many files ({len(entries)} > {MAX_ZIP_ENTRIES} limit)")
+
+            for info in entries:
+                name = info.filename
+                if ".." in name or os.path.isabs(name):
+                    continue  # zip-slip guard
+                entry_ext = os.path.splitext(name)[1].lower()
+                if entry_ext == ".zip":
+                    continue  # block nested zips
+                if info.file_size > MAX_ENTRY_SIZE:
+                    continue  # single file too big, skip it
+                if entry_ext not in [".txt", ".md", ".csv", ".pdf", ".docx", ".xlsx", ".xls"]:
+                    continue  # unsupported type inside zip
+
+                tmp_path = os.path.join(tempfile.gettempdir(), f"zipentry_{uuid.uuid4().hex}{entry_ext}")
+                try:
+                    with z.open(info) as src, open(tmp_path, "wb") as dst:
+                        dst.write(src.read())
+                    sub_result = extract_file(tmp_path)
+                    texts.append(f"[FROM {name}]\n" + sub_result.get("text", ""))
+                except Exception:
+                    continue  # one bad file shouldn't kill the whole batch
+                finally:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+        # return {"text": "\n\n".join(texts)}
+        content = "\n\n".join(texts)
+        doc_type = "unstructured"
     else:
         raise ValueError(f"Unsupported file type: {ext}")
 

@@ -15,6 +15,7 @@ MAGIC_BYTES = {
     ".jpg": [b"\xFF\xD8\xFF"],
     ".jpeg": [b"\xFF\xD8\xFF"],
     ".png": [b"\x89PNG\r\n\x1a\n"],
+    ".zip": [b"PK"]
 }
 
 
@@ -32,7 +33,7 @@ def check_zip_bomb(path, ext):
     """DOCX/XLSX are ZIP files under the hood. Checks the total
     UNCOMPRESSED size before fully extracting — catches a tiny file
     crafted to explode into gigabytes when opened."""
-    if ext not in (".docx", ".xlsx"):
+    if ext not in (".docx", ".xlsx", ".zip"):
         return True
     try:
         with zipfile.ZipFile(path) as z:

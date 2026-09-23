@@ -24,17 +24,37 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   const [attachedPreview, setAttachedPreview] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState("");
-  const [switchPrompt, setSwitchPrompt] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const toast = useToast();
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   useEffect(() => {
     getDocuments()
       .then((res) => setDocuments(res.data.documents || []))
       .catch(() => {});
   }, []);
+  useEffect(() => {
+    const handleGlobalKeydown = (e) => {
+      const active = document.activeElement;
+      const alreadyTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+      if (alreadyTyping || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length === 1) inputRef.current?.focus();
+    };
+    window.addEventListener("keydown", handleGlobalKeydown);
+    return () => window.removeEventListener("keydown", handleGlobalKeydown);
+  }, []);
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const onScroll = () => setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
@@ -50,16 +70,8 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   };
 
   const handleDocSelect = (e) => {
-    const newId = e.target.value;
-    const prevId = selectedDocId;
-    if (prevId && newId !== prevId) {
-      const prevDoc = documents.find((d) => d.document_id === prevId);
-      setSwitchPrompt({ prevId, prevName: prevDoc?.filename, nextId: newId });
-    } else {
-      setSelectedDocId(newId);
-    }
+    setSelectedDocId(e.target.value);
   };
-
   const handleSend = async () => {
     const question = input.trim();
     if (!question || loading) return;
@@ -83,7 +95,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
     setLoading(true);
 
     try {
-      const filter = docType === "All" ? null : docType;
+      const filter = null;
 
       if (imageToSend) {
         const res = await askImageQuestion(question, imageToSend, filter);
@@ -110,7 +122,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
             ...prev,
             {
               role: "ai",
-              text: `Confirm karo — ye file(s) delete kar dun: ${res.data.matched_documents
+              text: `Confirm to Delete these files: ${res.data.matched_documents
                 .map((d) => d.filename)
                 .join(", ")}?`,
               sources: [],
@@ -151,7 +163,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   };
 
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-3xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-3xl mx-auto flex flex-col h-[calc(100vh-4rem)] relative">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
           <h2 className="text-xl font-medium text-text-primary">Ask Documents</h2>
@@ -189,17 +201,6 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
               </option>
             ))}
           </select>
-          <select
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-            className="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-text-secondary"
-          >
-            {DOC_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -216,7 +217,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pr-1">
         {messages.length === 0 && !loading && (
           <EmptyState
             icon="💬"
@@ -232,6 +233,14 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
         {loading && <ThinkingSkeleton />}
         <div ref={scrollRef} />
       </div>
+      {showScrollDown && (
+        <button
+          onClick={() => scrollRef.current?.scrollIntoView({ behavior: "smooth" })}
+          className="absolute bottom-24 right-6 h-9 w-9 rounded-full bg-surface border border-border shadow-lg flex items-center justify-center text-text-secondary hover:text-text-primary z-10"
+        >
+          ↓
+        </button>
+      )}
 
       {attachedPreview && (
         <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-surface border border-border rounded-xl w-fit">
@@ -264,6 +273,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
           +
         </button>
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -272,7 +282,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
               ? "Ask something about the attached image…"
               : selectedDocId
               ? "Ask a question about this document…"
-              : 'Ask a question, or say "SWOT analysis of report.pdf" / "delete report.pdf"…'
+              : 'Ask question'
           }
           className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50 transition-colors"
         />
@@ -284,32 +294,6 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
           Send
         </button>
       </div>
-
-      <Modal
-        open={!!switchPrompt}
-        title="Finished with this document?"
-        onClose={() => {
-          setSelectedDocId(switchPrompt.nextId);
-          setSwitchPrompt(null);
-        }}
-        onConfirm={async () => {
-          try {
-            await deleteDocument(switchPrompt.prevId);
-            setDocuments((prev) => prev.filter((d) => d.document_id !== switchPrompt.prevId));
-            toast?.show(`${switchPrompt.prevName} removed`);
-          } catch (err) {
-            toast?.show("Failed to remove document", "error");
-          } finally {
-            setSelectedDocId(switchPrompt.nextId);
-            setSwitchPrompt(null);
-          }
-        }}
-        confirmLabel="Yes, delete it"
-      >
-        You're switching away from <strong>{switchPrompt?.prevName}</strong>. Delete it now to
-        save space and keep the workspace clean? You can say no and keep it for later.
-      </Modal>
-
       <Modal
         open={!!pendingDelete}
         title="Confirm deletion"

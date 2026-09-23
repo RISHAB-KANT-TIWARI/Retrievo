@@ -73,7 +73,7 @@ export const askImageQuestion = (question, imageFile, documentType = null) => {
 // export const runComplianceCheck = (payload = {}) =>
 //   client.post("/compliance-check", payload);
 export const runComplianceCheck = (documentIds) =>
-  client.post("/compliance-check", { document_ids: documentIds });
+  client.post("/compliance-check", { document_ids: documentIds }, { timeout: 300000 });
 
 export const getLastComplianceCheck = () => client.get("/compliance-check");
 
@@ -91,7 +91,7 @@ export const uploadDocument = (file, onProgress) => {
   formData.append("file", file);
   return client.post("/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    timeout: 120000, // STEP: 30000 (30s) se badhaakar 120000 (2 min) kiya
+    timeout: 300000, // 5 minute — bade/OCR-heavy files ke liye
     onUploadProgress: (evt) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -162,3 +162,6 @@ export const agentAsk = (message, provider = "qwen") =>
 
 export const agentDeleteConfirmed = (documentIds) =>
   client.post("/agent/delete-confirmed", { document_ids: documentIds });
+
+export const getDocumentContent = (documentId) =>
+  client.get(`/documents/${documentId}/content`);

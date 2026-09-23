@@ -72,22 +72,11 @@ def chunk_structured(records, doc_type_label, project_name):
     return chunks
 
 
-def classify_doc_type(filename, text=""):
+def classify_doc_type(filename, filetype=""):
     fname = filename.lower()
     if fname.startswith("email:") or fname.startswith("email_"):
         return "Email"
-    elif "spec" in fname:
-        return "Specification"
-    elif "submittal" in fname:
-        return "Vendor Submittal"
-    elif "rfi" in fname:
-        return "RFI"
-    elif "schedule" in fname or "procurement" in fname:
-        return "Procurement Schedule"
-    elif "commission" in fname:
-        return "Commissioning Record"
-    return "Unknown"
-
+    return filetype.lstrip(".").upper() if filetype else "Unknown"
 
 def chunk_document(extracted, document_id, stored_filename, project_name="Ironwood Point Data Center"):
     """
@@ -96,7 +85,7 @@ def chunk_document(extracted, document_id, stored_filename, project_name="Ironwo
     document_id — not filename — is the real identity of this upload,
     since two uploads can share the same filename.
     """
-    doc_type_label = classify_doc_type(extracted["filename"], extracted.get("text", ""))
+    doc_type_label = classify_doc_type(extracted["filename"], extracted.get("filetype", ""))
 
     if extracted["doc_type"] == "unstructured":
         raw_chunks = chunk_unstructured(extracted["text"], extracted["filename"])

@@ -96,3 +96,40 @@ def delete_document(document_id: str):
     not filename) from ChromaDB.
     """
     _collection.delete(where={"document_id": document_id})
+
+def get_document_chunks(document_id: str):
+    """
+    Returns ALL chunks of one specific document (no semantic search) —
+    used when the user has explicitly selected a single document to
+    ask about, so nothing gets missed.
+    """
+    data = _collection.get(
+        where={"document_id": document_id},
+        include=["documents", "metadatas"],
+    )
+
+    items = list(zip(data["ids"], data["documents"], data["metadatas"]))
+    # chunk_id format is "{document_id}_{index}" — sort by that index
+    items.sort(key=lambda x: int(x[0].split("_")[-1]))
+
+    return [{"text": text, "metadata": meta} for _, text, meta in items]
+
+from rank_bm25 import BM25Okapi
+
+def keyword_search(query: str, n_results: int = 8, filter_document_type: str = None):
+    data = _collection.get(include=["documents", "metadatas"])
+    if not data["ids"]:
+        return []
+    texts, metadatas = data["documents"], data["metadatas"]
+
+    if filter_document_type:
+        filtered = [(t, m) for t, m in zip(texts, metadatas) if m.get("document_type") == filter_document_type]
+        if not filtered:
+            return []
+        texts, metadatas = zip(*filtered)
+
+    tokenized = [t.lower().split() for t in texts]
+    bm25 = BM25Okapi(tokenized)
+    scores = bm25.get_scores(query.lower().split())
+    ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_results]
+    return [{"text": texts[i], "metadata": metadatas[i], "distance": 0} for i in ranked if scores[i] > 0]

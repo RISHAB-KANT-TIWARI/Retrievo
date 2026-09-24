@@ -16,6 +16,7 @@ export default function UploadDropzone({ onUploaded }) {
   const zoneRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(null); // null = idle
+  const [batchProgress, setBatchProgress] = useState(null); // {current, total} ya null 
   const [error, setError] = useState(null);
 
   useGSAP(
@@ -29,39 +30,51 @@ export default function UploadDropzone({ onUploaded }) {
     { dependencies: [dragging] }
   );
 
-  const handleFile = useCallback(
-    async (file) => {
+  const handleFiles = useCallback(
+    async (fileList) => {
+      const files = Array.from(fileList).slice(0, 8); // ek batch mein max 8
       setError(null);
-      setProgress(0);
-      try {
-        const res = await uploadDocument(file, setProgress);
-        if (res.data.status === "error") {
-          throw new Error(res.data.message || "Upload failed");
+      const failed = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        setBatchProgress({ current: i + 1, total: files.length });
+        setProgress(0);
+        try {
+          const res = await uploadDocument(files[i], setProgress);
+          if (res.data.status === "error") {
+            failed.push({ name: files[i].name, reason: res.data.message });
+          } else {
+            onUploaded?.(res.data);
+          }
+        } catch (err) {
+          failed.push({ name: files[i].name, reason: err.message || "Upload failed" });
         }
-        onUploaded?.(res.data);
-      } catch (err) {
-        setError(err.message || "Upload failed");
+      }
+
+      setProgress(null);
+      setBatchProgress(null);
+
+      if (failed.length > 0) {
+        setError(
+          `${failed.length} file(s) not uploaded: ` +
+          failed.map((f) => `${f.name} — ${f.reason}`).join("; ")
+        );
         if (zoneRef.current) {
           zoneRef.current.classList.add("error-shake");
           setTimeout(() => zoneRef.current?.classList.remove("error-shake"), 400);
         }
-      } finally {
-        setProgress(null);
       }
     },
     [onUploaded]
   );
-
   const onDrop = (e) => {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+    if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
   };
 
   const onSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
+    if (e.target.files?.length) handleFiles(e.target.files);
   };
 
   return (
@@ -84,7 +97,8 @@ export default function UploadDropzone({ onUploaded }) {
       <input
         id="doc-upload-input"
         type="file"
-        accept=".pdf,.docx,.xlsx,.xls,.csv,.txt"
+        multiple
+        accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.zip"
         className="hidden"
         onChange={onSelect}
       />
@@ -95,12 +109,16 @@ export default function UploadDropzone({ onUploaded }) {
             Drag & drop a document, or click to browse
           </p>
           <p className="text-text-muted text-xs mt-1">
-            PDF, DOCX, XLSX, CSV, TXT supported
+            PDF, DOCX, XLSX, CSV, TXT, MD, JPEG, JPG, PNG, ZIP supported
           </p>
         </>
       ) : (
         <div className="max-w-xs mx-auto">
-          <p className="text-text-secondary text-xs mb-2">Processing… {progress}%</p>
+          <p className="text-text-secondary text-xs mb-2">
+            {batchProgress
+              ? `File ${batchProgress.current}/${batchProgress.total} — Processing… ${progress}%`
+              : `Processing… ${progress}%`}
+          </p>
           <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
             <div
               className="h-full rounded-full bg-accent relative transition-[width] duration-200"

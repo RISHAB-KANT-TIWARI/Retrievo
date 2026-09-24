@@ -1,42 +1,43 @@
+import re
+import difflib
+from datetime import datetime, timezone
+from fastapi.responses import FileResponse
 import requests
-from llm_api_provider import QWEN_API_URL, ask_vision
+from llm_api_provider import QWEN_API_URL, ask_vision, ask_ai
 from fastapi import UploadFile, File, Form
 import subprocess
 import sys
 import json
 import asyncio
 import logging
-from llm_api_provider import ask_ai
 from contextlib import asynccontextmanager
-from fastapi import FastAPI 
-from fastapi import UploadFile , File
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from rag import ask_with_rag 
+from rag import ask_with_rag
 from compilance import run_compliance_check
 from vector_store import add_chunks
 from vector_store import search
 from vector_store import _collection
-from vector_store import list_documents, delete_document
+from vector_store import list_documents, delete_document, get_document_chunks
 from vector_store import get_stats
 from chunker import chunk_document
 from exctractors import extract_file
 from email_ingest import sync_emails, ingest_email, list_emails, get_email_status
 import uuid
-import os 
+import os
 import shutil
-from compilance import save_compliance_results , load_compliance_results
+from compilance import save_compliance_results, load_compliance_results
 from dotenv import load_dotenv
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-EMAIL_POLL_INTERVAL = int(os.getenv("EMAIL_POLL_INTERVAL_MINUTES", "5")) * 60  # seconds
+EMAIL_POLL_INTERVAL = int(os.getenv("EMAIL_POLL_INTERVAL_MINUTES", "5")) * 60
 
 
 async def _email_poll_loop():
-    """Background task: sync new emails from IMAP every EMAIL_POLL_INTERVAL seconds."""
     logger.info("Email poller started (interval=%ds)", EMAIL_POLL_INTERVAL)
     while True:
         try:
@@ -52,7 +53,6 @@ async def _email_poll_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start background tasks on startup, cancel on shutdown."""
     poll_task = asyncio.create_task(_email_poll_loop())
     try:
         yield
@@ -96,26 +96,147 @@ def root():
 class AskRequest(BaseModel):
     question: str
     document_type: str | None = None
+    document_id: str | None = None
     provider: str = "qwen"
+
 
 @app.post("/ask")
 def ask(req: AskRequest):
     from rag import MAX_DISTANCE
-    chunks = search(req.question, filter_document_type=req.document_type)
-    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
+    answer = ask_with_rag(
+        req.question,
+        filter_document_type=req.document_type,
+        document_id=req.document_id,
+        provider=req.provider,
+    )
 
-    answer = ask_with_rag(req.question, filter_document_type=req.document_type, provider=req.provider)
+    sources = []
+    if not req.document_id:
+        chunks = search(req.question, filter_document_type=req.document_type)
+        sources = [
+            {
+                "filename": c["metadata"]["filename"],
+                "document_type": c["metadata"]["document_type"],
+                "text": c["text"],
+                "distance": c["distance"],
+            }
+            for c in chunks if c["distance"] <= MAX_DISTANCE
+        ]
 
-    sources = [
-        {
-            "filename": c["metadata"]["filename"],
-            "document_type": c["metadata"]["document_type"],
-            "text": c["text"],
-            "distance": c["distance"],
-        }
-        for c in relevant_chunks
-    ]
     return {"answer": answer, "sources": sources}
+
+
+# ── Agentic document routing (natural-language switch/delete) ───────────────
+# Pure code-based (regex + fuzzy match) — NO extra AI call, so it's fast and
+# doesn't burn extra model credit/GPU time on every single message.
+
+FILENAME_PATTERN = re.compile(r'[\w\-]+\.\w{2,5}')
+DELETE_KEYWORDS = ("delete", "remove", "hata", "hatao", "hatado", "erase")
+
+
+def extract_filename_candidates(text: str) -> list[str]:
+    return FILENAME_PATTERN.findall(text)
+
+
+def is_delete_intent(text: str) -> bool:
+    lowered = text.lower()
+    return any(kw in lowered for kw in DELETE_KEYWORDS)
+
+
+def match_documents(candidates: list[str]) -> list[dict]:
+    """
+    Fuzzy-matches whatever filename-like text the user typed (even with
+    typos) against the REAL document list — never trusts raw user input
+    directly, only uses it to find the closest actual match.
+    """
+    all_docs = list_documents()
+    all_filenames = [d["filename"] for d in all_docs]
+
+    matched = []
+    matched_ids = set()
+    for cand in candidates:
+        close = difflib.get_close_matches(cand, all_filenames, n=1, cutoff=0.55)
+        if close:
+            doc = next(d for d in all_docs if d["filename"] == close[0])
+            if doc["document_id"] not in matched_ids:
+                matched.append(doc)
+                matched_ids.add(doc["document_id"])
+    return matched
+
+
+class AgentRequest(BaseModel):
+    message: str
+    provider: str = "qwen"
+
+
+@app.post("/agent/ask")
+def agent_ask(req: AgentRequest):
+    candidates = extract_filename_candidates(req.message)
+    matched = match_documents(candidates) if candidates else []
+
+    if is_delete_intent(req.message) and matched:
+        # Destructive — NEVER auto-execute, just report what was understood
+        return {
+            "type": "confirm_delete",
+            "matched_documents": [
+                {"document_id": d["document_id"], "filename": d["filename"]} for d in matched
+            ],
+        }
+
+    # Not a delete — treat as a question. If exactly one document was
+    # mentioned by name, auto-switch to it (full content, non-destructive).
+    document_id = matched[0]["document_id"] if len(matched) == 1 else None
+    answer = ask_with_rag(req.message, document_id=document_id, provider=req.provider)
+
+    sources = []
+    if not document_id:
+        from rag import MAX_DISTANCE
+        chunks = search(req.message)
+        sources = [
+            {
+                "filename": c["metadata"]["filename"],
+                "document_type": c["metadata"]["document_type"],
+                "text": c["text"],
+                "distance": c["distance"],
+            }
+            for c in chunks if c["distance"] <= MAX_DISTANCE
+        ]
+
+    return {
+        "type": "answer",
+        "answer": answer,
+        "sources": sources,
+        "auto_selected_document": matched[0]["filename"] if document_id else None,
+    }
+
+
+class DeleteConfirmedRequest(BaseModel):
+    document_ids: list[str]
+
+
+@app.post("/agent/delete-confirmed")
+def agent_delete_confirmed(req: DeleteConfirmedRequest):
+    """
+    Only called AFTER the user has explicitly confirmed — reuses the exact
+    same delete logic (ChromaDB + disk) as the manual Remove button.
+    """
+    docs = list_documents()
+    deleted = []
+    for doc_id in req.document_ids:
+        match = next((d for d in docs if d["document_id"] == doc_id), None)
+        delete_document(doc_id)
+        if match and match.get("stored_filename"):
+            file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        if match:
+            deleted.append(match["filename"])
+    log_action("agent_delete", {"document_ids": req.document_ids, "deleted": deleted})
+    return {"status": "success", "deleted": deleted}
+
+
+# ── Vision (image chat) ───────────────────────────────────────────────────
+
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 MAX_IMAGE_SIZE = 15 * 1024 * 1024  # 15 MB
 VISION_SYSTEM_INSTRUCTION = (
@@ -134,8 +255,6 @@ def ask_image(
     document_type: str | None = Form(None),
     image: UploadFile = File(...),
 ):
-    # Vision works with either remote Qwen or local Ollama — no guard needed
-
     original_filename = os.path.basename(image.filename)
     file_ext = os.path.splitext(original_filename)[1].lower()
 
@@ -189,7 +308,6 @@ def ask_image(
             os.remove(temp_path)
         return {"status": "error", "message": sandbox_result.get("reason", "Image rejected by security check.")}
 
-    # ---- Sandbox passed — send the ACTUAL IMAGE (not OCR text) to the vision model ----
     try:
         answer = ask_vision(question, temp_path, system_instruction=VISION_SYSTEM_INSTRUCTION)
     except Exception as e:
@@ -199,12 +317,18 @@ def ask_image(
             os.remove(temp_path)
 
     return {"answer": answer}
+
+
 @app.get("/documents")
 def get_documents():
     return {"documents": list_documents()}
 
-
-# upload mechanism
+@app.get("/documents/{document_id}/content")
+def get_document_content(document_id: str):
+    chunks = get_document_chunks(document_id)
+    if not chunks:
+        return {"status": "error", "message": "Document not found"}
+    return {"text": "\n\n".join(c["text"] for c in chunks)}
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 UPLOAD_DIR = os.getenv(
@@ -213,10 +337,31 @@ UPLOAD_DIR = os.getenv(
 )
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+@app.get("/documents/{document_id}/file")
+def get_document_file(document_id: str):
+    docs = list_documents()
+    match = next((d for d in docs if d["document_id"] == document_id), None)
+    if not match or not match.get("stored_filename"):
+        return {"status": "error", "message": "File not found"}
+    file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
+    if not os.path.exists(file_path):
+        return {"status": "error", "message": "File missing on disk"}
+    return FileResponse(
+        file_path,
+        headers={"Content-Disposition": f'inline; filename="{match["filename"]}"'},
+    )
+
+AUDIT_LOG_PATH = os.path.join(BASE_DIR, "audit_log.jsonl")
+
+def log_action(action: str, details: dict):
+    entry = {"time": datetime.now(timezone.utc).isoformat(), "action": action, "details": details}
+    with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md", ".jpg", ".jpeg", ".png",".zip"}
+MAX_FILE_SIZE = 50 * 1024 * 1024
 
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".xls", ".csv", ".txt", ".md"}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB limit
 @app.post("/upload")
 def upload_document(file: UploadFile = File(...)):
     original_filename = os.path.basename(file.filename)
@@ -236,7 +381,6 @@ def upload_document(file: UploadFile = File(...)):
     with open(save_path, "wb") as f:
         f.write(content)
 
-    # ---- SANDBOX: file validation + extraction in an isolated subprocess ----
     sandbox_env = {
         "PATH": os.environ.get("PATH", ""),
         "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
@@ -274,7 +418,6 @@ def upload_document(file: UploadFile = File(...)):
 
     extracted = sandbox_result["data"]
     extracted["filename"] = original_filename
-    # ---- END SANDBOX ----
 
     chunks = chunk_document(extracted, document_id=document_id, stored_filename=stored_filename)
 
@@ -283,6 +426,7 @@ def upload_document(file: UploadFile = File(...)):
 
     add_chunks(chunks)
 
+    log_action("upload", {"document_id": document_id, "filename": original_filename, "chunks": len(chunks)})
     return {
         "filename": original_filename,
         "document_id": document_id,
@@ -290,6 +434,8 @@ def upload_document(file: UploadFile = File(...)):
         "chunks_added": len(chunks),
         "status": "success",
     }
+
+
 @app.delete("/documents/{document_id}")
 def remove_document(document_id: str):
     docs = list_documents()
@@ -301,17 +447,20 @@ def remove_document(document_id: str):
         file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
         if os.path.exists(file_path):
             os.remove(file_path)
-
+    log_action("delete", {"document_id": document_id, "filename": match["filename"] if match else None})
     return {"status": "success", "message": "Document removed"}
+
 
 class ComplianceRequest(BaseModel):
     document_ids: list[str]
+
 
 @app.post("/compliance-check")
 def compliance_check(req: ComplianceRequest):
     results = run_compliance_check(req.document_ids)
     data = save_compliance_results(results)
     return data
+
 
 @app.get("/compliance-check")
 def get_last_compliance_check():
@@ -329,33 +478,31 @@ def stats():
         "deviations_found": deviations,
     }
 
-
-# ── Email endpoints ───────────────────────────────────────────────────────────
+@app.get("/audit-log")
+def get_audit_log(limit: int = 50):
+    if not os.path.exists(AUDIT_LOG_PATH):
+        return {"logs": []}
+    with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+        lines = f.readlines()[-limit:]
+    return {"logs": [json.loads(l) for l in lines]}
 
 @app.get("/emails")
 def get_emails():
-    """Return all fetched (but not necessarily ingested) emails."""
     return {"emails": list_emails()}
 
 
 @app.post("/email/sync")
 def email_sync():
-    """Manually trigger an IMAP sync to fetch new emails."""
     result = sync_emails()
     return result
 
 
 @app.post("/email/ingest/{uid}")
 def email_ingest(uid: str):
-    """
-    Ingest a specific email (by IMAP UID) into ChromaDB.
-    Processes both the email body text and any allowed attachments.
-    """
     result = ingest_email(uid)
     return result
 
 
 @app.get("/email/status")
 def email_status():
-    """Return email sync status: last sync time, total fetched/ingested, errors."""
     return get_email_status()

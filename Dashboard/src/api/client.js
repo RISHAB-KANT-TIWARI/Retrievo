@@ -37,7 +37,7 @@ const client = axios.create({
  */
 
 export const askQuestion = (question, documentType = null, provider = "qwen", documentId = null) =>
-  client.post("/ask", { question, document_type: documentType, provider, document_id: documentId });
+  client.post("/ask", { question, document_type: documentType, provider, document_id: documentId }, { timeout: 180000 });
 
 export const askImageQuestion = (question, imageFile, documentType = null) => {
   const formData = new FormData();
@@ -158,7 +158,7 @@ export default client;
 
 
 export const agentAsk = (message, provider = "qwen") =>
-  client.post("/agent/ask", { message, provider });
+  client.post("/agent/ask", { message, provider }, { timeout: 180000 });
 
 export const agentDeleteConfirmed = (documentIds) =>
   client.post("/agent/delete-confirmed", { document_ids: documentIds });

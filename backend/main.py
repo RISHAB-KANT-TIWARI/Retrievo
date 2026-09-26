@@ -185,11 +185,11 @@ def agent_ask(req: AgentRequest):
 
     # Not a delete — treat as a question. If exactly one document was
     # mentioned by name, auto-switch to it (full content, non-destructive).
-    document_id = matched[0]["document_id"] if len(matched) == 1 else None
-    answer = ask_with_rag(req.message, document_id=document_id, provider=req.provider)
+    document_ids = [d["document_id"] for d in matched] if matched else None
+    answer = ask_with_rag(req.message, document_ids=document_ids, provider=req.provider)
 
     sources = []
-    if not document_id:
+    if not document_ids:
         from rag import MAX_DISTANCE
         chunks = search(req.message)
         sources = [
@@ -206,7 +206,7 @@ def agent_ask(req: AgentRequest):
         "type": "answer",
         "answer": answer,
         "sources": sources,
-        "auto_selected_document": matched[0]["filename"] if document_id else None,
+        "auto_selected_document": matched[0]["filename"] if document_ids else None,
     }
 
 
@@ -282,7 +282,7 @@ def ask_image(
             [sys.executable, "sandbox_check.py", temp_path],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=180,
             env=sandbox_env,
             cwd=BASE_DIR,
         )
@@ -393,7 +393,7 @@ def upload_document(file: UploadFile = File(...)):
             [sys.executable, "sandbox_check.py", save_path],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=180,
             env=sandbox_env,
             cwd=BASE_DIR,
         )

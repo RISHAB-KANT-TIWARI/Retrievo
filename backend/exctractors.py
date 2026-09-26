@@ -14,10 +14,13 @@ import pypdf
 from pdf2image import convert_from_path
 from PIL import Image
 import pytesseract
-
+import pdfplumber
+from markitdown import MarkItDown
+md_converter = MarkItDown()
 
 MAX_ZIP_ENTRIES = 20
 MAX_ENTRY_SIZE = 10 * 1024 * 1024  
+
 
 def iter_block_items(parent):
     if isinstance(parent, _Document):
@@ -55,32 +58,40 @@ def extract_docx(path):
 OCR_CONFIG = "--psm 6"
 
 
+
+
 def extract_pdf(path):
-    reader = pypdf.PdfReader(path)
     full_text = []
-    ocr_dpi = int(os.getenv("OCR_DPI", 300))  # STEP: 250 se 300 kiya — sharper image, better OCR digits/tables
+    ocr_dpi = int(os.getenv("OCR_DPI", 300))
 
-    for i, page in enumerate(reader.pages):
-        text = page.extract_text() or ""
+    with pdfplumber.open(path) as pdf:
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text() or ""
+            tables = page.extract_tables()
 
-        if len(text.strip()) < 20:
-            # Page has little/no real text — likely a scanned image, fall back to OCR
-            try:
-                images = convert_from_path(
-                    path, dpi=ocr_dpi,
-                    first_page=i + 1, last_page=i + 1
-                )
-                if images:
-                    text = pytesseract.image_to_string(images[0], config=OCR_CONFIG)
-                    del images
-                    gc.collect()
-            except Exception as e:
-                text = f"[OCR failed for this page: {e}]"
+            if len(text.strip()) < 20 and not tables:
+                try:
+                    images = convert_from_path(path, dpi=ocr_dpi, first_page=i + 1, last_page=i + 1)
+                    if images:
+                        text = pytesseract.image_to_string(images[0], config=OCR_CONFIG)
+                        del images
+                        gc.collect()
+                except Exception as e:
+                    text = f"[OCR failed for this page: {e}]"
 
-        full_text.append(f"[PAGE {i+1}]\n{text}")
+            page_content = text
+            for table in tables:
+                if not table or not table[0]:
+                    continue
+                rows_md = ["[TABLE]", " | ".join(str(h or "") for h in table[0])]
+                for row in table[1:]:
+                    rows_md.append(" | ".join(str(c or "") for c in row))
+                rows_md.append("[/TABLE]")
+                page_content += "\n" + "\n".join(rows_md)
+
+            full_text.append(f"[PAGE {i+1}]\n{page_content}")
 
     return "\n".join(full_text)
-
 
 def extract_image(path):
     """
@@ -146,7 +157,7 @@ def extract_file(path):
     ext = os.path.splitext(path)[1].lower()
 
     if ext == ".docx":
-        content = extract_docx(path)
+        content = md_converter.convert(path).text_content
         doc_type = "unstructured"
     elif ext == ".pdf":
         content = extract_pdf(path)

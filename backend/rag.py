@@ -13,9 +13,27 @@ MAX_DISTANCE = 1.5
 MAX_FULL_DOC_CHARS = 60000  # safety cap — agar ek document itna bada hai, top-K pe fallback karo
 
 
-def ask_with_rag(question: str, n_results: int = 8, filter_document_type: str = None,
-                  document_id: str = None, provider: str = "qwen"):
+def ask_with_rag(question: str, n_results: int = 8, filter_document_type: str = None,document_id: str = None, document_ids: list = None, provider: str = "qwen"):
+    if document_ids:
+        combined = []
+        per_doc_budget = MAX_FULL_DOC_CHARS // max(len(document_ids), 1)
+        for doc_id in document_ids:
+            chunks = get_document_chunks(doc_id)
+            if not chunks:
+                continue
+            text = "\n\n".join(c["text"] for c in chunks)[:per_doc_budget]
+            fname = chunks[0]["metadata"]["filename"]
+            combined.append(f"=== {fname} ===\n{text}")
+        context = "\n\n".join(combined)
+        prompt = f"""You are an AI assistant. Answer using the context below — it contains the COMPLETE content of each document listed. Address EVERY part of the question, even if different parts relate to different documents.
 
+CONTEXT:
+{context}
+
+QUESTION: {question}
+
+ANSWER:"""
+        return ask_ai(prompt, provider=provider)
     if document_id:
         # Ek specific document select hai — uska POORA content do, search mat karo
         chunks = get_document_chunks(document_id)
@@ -36,8 +54,8 @@ ANSWER:"""
         # Agar document bahut bada hai (60,000 char se zyada), neeche wale normal search pe fallback
 
     # Normal path: semantic top-K search (saare documents mein se, ya bade document ke liye fallback)
-    semantic_chunks = search(question, n_results=15, filter_document_type=filter_document_type)
-    keyword_chunks = keyword_search(question, n_results=15, filter_document_type=filter_document_type)
+    semantic_chunks = search(question, n_results=25, filter_document_type=filter_document_type)
+    keyword_chunks = keyword_search(question, n_results=25, filter_document_type=filter_document_type)
 
     seen, candidates = set(), []
     for c in semantic_chunks + keyword_chunks:
@@ -53,10 +71,7 @@ ANSWER:"""
     scores = _get_reranker().predict(pairs)
     ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
     relevant_chunks = [c for c, s in ranked[:n_results]]
-
-    if not relevant_chunks:
-        return "No relevant information found in the documents."
-
+    
     context_blocks = []
     for i, c in enumerate(relevant_chunks):
         context_blocks.append(

@@ -52,7 +52,8 @@ def chunk_unstructured(text, filename, max_chunk_chars=1200):
                 if len(current) + len(para) > max_chunk_chars and not in_table:
                     if current.strip():
                         chunks.append(current.strip())
-                    current = para + "\n"
+                    overlap = current.strip()[-400:] if current.strip() else ""
+                    current = overlap + "\n" + para + "\n"
                 else:
                     current += para + "\n"
             if current.strip():

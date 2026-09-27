@@ -17,7 +17,6 @@ pytesseract
 Pillow
 openpyxl
 google-genai
-rank-bm25
 torch
 pydantic[email]
 markitdown[docx]

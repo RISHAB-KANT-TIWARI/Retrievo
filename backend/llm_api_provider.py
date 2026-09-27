@@ -82,6 +82,10 @@ def embed_text(text: str) -> list[float]:
     embedding = _embedding_model.encode(text)
     return embedding.tolist()
 
+def embed_text_batch(texts: list[str]) -> list[list[float]]:
+    embeddings = _embedding_model.encode(texts, batch_size=32, show_progress_bar=False)
+    return embeddings.tolist()
+
 
 @retry(
     stop=stop_after_attempt(3),
@@ -124,3 +128,5 @@ def ask_vision(prompt: str, image_path: str, system_instruction: str = DEFAULT_S
         )
         response.raise_for_status()
         return response.json()["response"]
+
+

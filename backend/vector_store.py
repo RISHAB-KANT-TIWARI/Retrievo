@@ -1,5 +1,5 @@
 import chromadb
-from llm_api_provider import embed_text
+from llm_api_provider import embed_text, embed_text_batch
 import os
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
 
@@ -9,31 +9,19 @@ _collection = _chroma_client.get_or_create_collection(name="epc_documents")
 
 
 def add_chunks(chunks: list[dict]):
-    ids = []
-    texts = []
-    metadatas = []
-    embeddings = []
+    ids = [c["chunk_id"] for c in chunks]
+    texts = [c["text"] for c in chunks]
+    embeddings = embed_text_batch(texts)
+    metadatas = [{
+        "filename": c["filename"],
+        "document_id": c["document_id"],
+        "stored_filename": c["stored_filename"],
+        "filetype": c["filetype"],
+        "doc_type": c["doc_type"],
+        "document_type": c["document_type"],
+    } for c in chunks]
 
-    for chunk in chunks:
-        ids.append(chunk["chunk_id"])
-        texts.append(chunk["text"])
-        embeddings.append(embed_text(chunk["text"]))
-        metadatas.append({
-            "filename": chunk["filename"],
-            "document_id": chunk["document_id"],
-            "stored_filename": chunk["stored_filename"],
-            "filetype": chunk["filetype"],
-            "doc_type": chunk["doc_type"],
-            "document_type": chunk["document_type"],
-        })
-
-    _collection.add(
-        ids=ids,
-        documents=texts,
-        embeddings=embeddings,
-        metadatas=metadatas,
-    )
-
+    _collection.add(ids=ids, documents=texts, metadatas=metadatas, embeddings=embeddings)
 
 def search(query: str, n_results: int = 8, filter_document_type: str = None):
     query_embedding = embed_text(query)
@@ -113,23 +101,3 @@ def get_document_chunks(document_id: str):
     items.sort(key=lambda x: int(x[0].split("_")[-1]))
 
     return [{"text": text, "metadata": meta} for _, text, meta in items]
-
-from rank_bm25 import BM25Okapi
-
-def keyword_search(query: str, n_results: int = 8, filter_document_type: str = None):
-    data = _collection.get(include=["documents", "metadatas"])
-    if not data["ids"]:
-        return []
-    texts, metadatas = data["documents"], data["metadatas"]
-
-    if filter_document_type:
-        filtered = [(t, m) for t, m in zip(texts, metadatas) if m.get("document_type") == filter_document_type]
-        if not filtered:
-            return []
-        texts, metadatas = zip(*filtered)
-
-    tokenized = [t.lower().split() for t in texts]
-    bm25 = BM25Okapi(tokenized)
-    scores = bm25.get_scores(query.lower().split())
-    ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_results]
-    return [{"text": texts[i], "metadata": metadatas[i], "distance": 0} for i in ranked if scores[i] > 0]

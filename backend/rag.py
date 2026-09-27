@@ -1,4 +1,4 @@
-from vector_store import search, get_document_chunks, keyword_search
+from vector_store import search, get_document_chunks
 from llm_api_provider import ask_ai
 from sentence_transformers import CrossEncoder
 
@@ -10,7 +10,7 @@ def _get_reranker():
         _reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
     return _reranker
 MAX_DISTANCE = 1.5
-MAX_FULL_DOC_CHARS = 60000  # safety cap — agar ek document itna bada hai, top-K pe fallback karo
+MAX_FULL_DOC_CHARS = 30000  # safety cap — agar ek document itna bada hai, top-K pe fallback karo
 
 
 def ask_with_rag(question: str, n_results: int = 8, filter_document_type: str = None,document_id: str = None, document_ids: list = None, provider: str = "qwen"):
@@ -54,23 +54,8 @@ ANSWER:"""
         # Agar document bahut bada hai (60,000 char se zyada), neeche wale normal search pe fallback
 
     # Normal path: semantic top-K search (saare documents mein se, ya bade document ke liye fallback)
-    semantic_chunks = search(question, n_results=25, filter_document_type=filter_document_type)
-    keyword_chunks = keyword_search(question, n_results=25, filter_document_type=filter_document_type)
-
-    seen, candidates = set(), []
-    for c in semantic_chunks + keyword_chunks:
-        key = (c["metadata"]["document_id"], c["text"])
-        if key not in seen:
-            seen.add(key)
-            candidates.append(c)
-
-    if not candidates:
-        return "No relevant information found in the documents."
-
-    pairs = [[question, c["text"]] for c in candidates]
-    scores = _get_reranker().predict(pairs)
-    ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
-    relevant_chunks = [c for c, s in ranked[:n_results]]
+    chunks = search(question, n_results=n_results, filter_document_type=filter_document_type)
+    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
     
     context_blocks = []
     for i, c in enumerate(relevant_chunks):

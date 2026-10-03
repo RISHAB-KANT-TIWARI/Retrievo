@@ -165,3 +165,9 @@ export const agentDeleteConfirmed = (documentIds) =>
 
 export const getDocumentContent = (documentId) =>
   client.get(`/documents/${documentId}/content`);
+
+export const getAuditLog = () => client.get("/audit-log?limit=50");
+export const getRelatedDocuments = (documentId) => client.get(`/related/${documentId}`);
+
+export const queryTimeline = (message, provider = "qwen") =>
+  client.post("/timeline/ask", { message, provider });

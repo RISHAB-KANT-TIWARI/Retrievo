@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import FileViewer from "./pages/FileViewer";
+import Timeline from "./pages/Timeline";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ToastProvider } from "./components/Toast";
@@ -19,6 +20,7 @@ const TITLES = {
   "/compliance": "Compliance Audit",
   "/documents": "Document Vault",
   "/emails": "Internal Correspondence",
+  "/timeline": "Memory Timeline",
 };
 
 function Layout() {
@@ -75,6 +77,7 @@ function Layout() {
             <Route path="/documents" element={<Documents />} />
             <Route path="/emails" element={<Emails />} />
             <Route path="/view/:documentId" element={<FileViewer />} />
+            <Route path="/timeline" element={<Timeline />} />
           </Routes>
         </div>
       </div>

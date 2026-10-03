@@ -1,4 +1,4 @@
-from vector_store import search, get_document_chunks
+from vector_store import search, get_document_chunks, keyword_search
 from llm_api_provider import ask_ai
 from sentence_transformers import CrossEncoder
 
@@ -52,19 +52,40 @@ QUESTION: {question}
 ANSWER:"""
             return ask_ai(prompt, provider=provider)
         # Agar document bahut bada hai (60,000 char se zyada), neeche wale normal search pe fallback
+        # Normal path: semantic top-K search + keyword search (hybrid) saare documents mein se
+    semantic_chunks = search(question, n_results=9, filter_document_type=filter_document_type)
+    keyword_chunks = keyword_search(question, n_results=9, filter_document_type=filter_document_type)
 
-    # Normal path: semantic top-K search (saare documents mein se, ya bade document ke liye fallback)
-    chunks = search(question, n_results=n_results, filter_document_type=filter_document_type)
-    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE]
-    
+    seen, chunks = set(), []
+    for c in keyword_chunks + semantic_chunks:
+        key = (c["metadata"]["document_id"], c["text"])
+        if key not in seen:
+            seen.add(key)
+            chunks.append(c)
+
+    relevant_chunks = [c for c in chunks if c["distance"] <= MAX_DISTANCE][:n_results]
+    print("DEBUG — chunks sent to model:")
+    for c in relevant_chunks:
+        print(f"  - {c['metadata']['filename']} | distance={c['distance']} | {c['text'][:80]}")
+    if not relevant_chunks:
+        return "No relevant information found in the documents."
+
+    summaries_seen, summary_blocks = set(), []
+    for c in relevant_chunks:
+        did = c["metadata"]["document_id"]
+        if did not in summaries_seen and c["metadata"].get("document_summary"):
+            summaries_seen.add(did)
+            summary_blocks.append(f"[Summary of {c['metadata']['filename']}]: {c['metadata']['document_summary']}")
+
     context_blocks = []
     for i, c in enumerate(relevant_chunks):
         context_blocks.append(
             f"[Source {i+1}: {c['metadata']['document_type']} — {c['metadata']['filename']}]\n{c['text']}"
         )
-    context = "\n\n".join(context_blocks)
 
-    prompt = f"""You are an AI assistant for a data centre EPC project. Answer the question using ONLY the context below. If the answer isn't in the context, say so clearly. Cite which source(s) you used by number.
+    context = "\n\n".join(summary_blocks) + "\n\n" + "\n\n".join(context_blocks)
+
+    prompt = f"""You are an AI assistant for a data centre EPC project. Answer the question using ONLY the context below. Document summaries are brief hints only and may be incomplete or wrong — ALWAYS check the full source-text sections below for the specific answer before concluding information is missing, even if a summary doesn't mention it. If the answer isn't in ANY source text, say so clearly. Cite which source(s) you used by number.
 
 CONTEXT:
 {context}
@@ -72,5 +93,4 @@ CONTEXT:
 QUESTION: {question}
 
 ANSWER (cite sources like [Source 1], [Source 2]):"""
-
     return ask_ai(prompt, provider=provider)

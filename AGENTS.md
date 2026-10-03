@@ -11,7 +11,7 @@
 
 In large-scale data centre EPC projects, teams must reconcile thousands of technical requirements across fragmented documentation: engineering specifications, vendor equipment submittals, Requests For Information (RFIs), procurement schedules, commissioning logs, and ongoing site correspondence. Discrepancies that slip through—such as a vendor supplying a UPS with a 10-minute battery runtime when the specification mandated 15 minutes—cause catastrophic rework, schedule delays, and contractual disputes on site.
 
-**EPCmind** solves this by providing:
+**Sovereign On-Premise Agentic AI** solves this by providing:
 1. **Ask Documents (Grounded RAG):** Natural-language Q&A across the project knowledge base with verifiable source citations and strict semantic distance thresholding (`MAX_DISTANCE = 1.5`).
 2. **Compliance Check (Automated Auditing):** Requirement-by-requirement comparison between engineering specifications and vendor submittals, classifying findings into `Match`, `Deviation`, or `Cannot verify` with severity ratings (`Critical`, `Moderate`, `Low`).
 3. **Automated Email Sync & Sandboxed Ingestion:** IMAP synchronization with Gmail to monitor site correspondence, saving emails to local persistent storage while providing on-demand sandboxed ingestion into the vector store.

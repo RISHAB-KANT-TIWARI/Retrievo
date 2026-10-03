@@ -43,6 +43,7 @@ async def _email_poll_loop():
         try:
             result = sync_emails()
             if result["fetched"] > 0:
+                log_action("email_received", {"count": result["fetched"]})
                 logger.info("Email sync: fetched %d new email(s)", result["fetched"])
             if result["errors"]:
                 logger.warning("Email sync errors: %s", result["errors"])
@@ -171,45 +172,81 @@ class AgentRequest(BaseModel):
 
 @app.post("/agent/ask")
 def agent_ask(req: AgentRequest):
-    candidates = extract_filename_candidates(req.message)
-    matched = match_documents(candidates) if candidates else []
+    #it is the feature of AI to ask the history of document uploading and deleting
+    #START HERE
+    HISTORY_KEYWORDS = ("uploaded", "deleted", "upload hua", "delete hua", "kab aya", "history", "on date", "removed")
+    if any(kw in req.message.lower() for kw in HISTORY_KEYWORDS) and not is_delete_intent(req.message):
+        if os.path.exists(AUDIT_LOG_PATH):
+            with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+                lines = f.readlines()[-80:]
+            log_text = "\n".join(lines)
+            prompt = f"""System activity log (JSON lines):
+{log_text}
 
-    if is_delete_intent(req.message) and matched:
-        # Destructive — NEVER auto-execute, just report what was understood
+Answer using ONLY this log. QUESTION: {req.message}
+ANSWER:"""
+            answer = ask_ai(prompt, provider=req.provider)
+            return {"type": "answer", "answer": answer, "sources": []}
+    #END HERE 
+    if not is_delete_intent(req.message):
+        candidates = extract_filename_candidates(req.message)
+        matched = match_documents(candidates) if candidates else []
+        document_id = matched[0]["document_id"] if len(matched) == 1 else None
+        document_ids = [d["document_id"] for d in matched] if len(matched) > 1 else None
+        answer = ask_with_rag(req.message, document_id=document_id, document_ids=document_ids, provider=req.provider)
+        return {"type": "answer", "answer": answer, "sources": []}
+
+    all_docs = list_documents()
+    file_list_str = "\n".join(f"- {d['filename']}" for d in all_docs)
+
+    intent_prompt = f"""Available documents:
+{file_list_str}
+
+User message: "{req.message}"
+
+Return ONLY JSON: {{"delete_targets": [...filenames...], "question": "...non-delete question part, else empty..."}}
+Respect except/besides exclusions."""
+    raw = ask_ai(intent_prompt, system_instruction="Return only valid JSON.")
+    try:
+        parsed = json.loads(raw.strip().strip("`").replace("json", "", 1).strip())
+    except Exception:
+        parsed = {"delete_targets": [], "question": req.message}
+
+    delete_targets = parsed.get("delete_targets", [])
+    question = parsed.get("question", "")
+
+    answer_data = None
+    if question.strip():
+        candidates = extract_filename_candidates(question) or extract_filename_candidates(req.message)
+        matched_q = match_documents(candidates) if candidates else []
+        document_id = matched_q[0]["document_id"] if len(matched_q) == 1 else None
+        document_ids = [d["document_id"] for d in matched_q] if len(matched_q) > 1 else None
+        answer_data = ask_with_rag(question, document_id=document_id, document_ids=document_ids, provider=req.provider)
+
+    # Conditional-delete recheck — agar koi answer nikla hai, delete-list usse dobara verify karo
+    if answer_data and delete_targets:
+        recheck_prompt = f"""Original request: "{req.message}"
+Computed answer: "{answer_data}"
+
+Based on the answer, which files should still be deleted? Respect any
+condition in the request (e.g. "if X then don't delete").
+Candidates: {delete_targets}
+Return ONLY a JSON array of filenames that should actually be deleted."""
+        raw2 = ask_ai(recheck_prompt, system_instruction="Return only a valid JSON array.")
+        try:
+            delete_targets = json.loads(raw2.strip().strip("`").replace("json", "", 1).strip())
+        except Exception:
+            pass
+
+    matched_delete = [d for d in all_docs if d["filename"] in delete_targets]
+
+    if matched_delete:
         return {
             "type": "confirm_delete",
-            "matched_documents": [
-                {"document_id": d["document_id"], "filename": d["filename"]} for d in matched
-            ],
+            "matched_documents": [{"document_id": d["document_id"], "filename": d["filename"]} for d in matched_delete],
+            "answer": answer_data,
         }
-
-    # Not a delete — treat as a question. If exactly one document was
-    # mentioned by name, auto-switch to it (full content, non-destructive).
-    document_ids = [d["document_id"] for d in matched] if matched else None
-    answer = ask_with_rag(req.message, document_ids=document_ids, provider=req.provider)
-
-    sources = []
-    if not document_ids:
-        from rag import MAX_DISTANCE
-        chunks = search(req.message)
-        sources = [
-            {
-                "filename": c["metadata"]["filename"],
-                "document_type": c["metadata"]["document_type"],
-                "text": c["text"],
-                "distance": c["distance"],
-            }
-            for c in chunks if c["distance"] <= MAX_DISTANCE
-        ]
-
-    return {
-        "type": "answer",
-        "answer": answer,
-        "sources": sources,
-        "auto_selected_document": matched[0]["filename"] if document_ids else None,
-    }
-
-
+    return {"type": "answer", "answer": answer_data or "I couldn't understand that request.", "sources": []}
 class DeleteConfirmedRequest(BaseModel):
     document_ids: list[str]
 
@@ -228,10 +265,18 @@ def agent_delete_confirmed(req: DeleteConfirmedRequest):
         if match and match.get("stored_filename"):
             file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
             if os.path.exists(file_path):
-                os.remove(file_path)
+                try:
+                    os.remove(file_path)
+                except PermissionError:
+                    import time
+                    time.sleep(0.5)
+                    try:
+                        os.remove(file_path)
+                    except PermissionError:
+                        print(f"Could not delete {file_path} — file in use, skipping disk cleanup")
         if match:
             deleted.append(match["filename"])
-    log_action("agent_delete", {"document_ids": req.document_ids, "deleted": deleted})
+    log_action("agent_delete", {"deleted": deleted})
     return {"status": "success", "deleted": deleted}
 
 
@@ -322,6 +367,23 @@ def ask_image(
 @app.get("/documents")
 def get_documents():
     return {"documents": list_documents()}
+
+@app.get("/related/{document_id}")
+def get_related(document_id: str):
+    chunks = get_document_chunks(document_id)
+    if not chunks:
+        return {"related": []}
+    sample_text = chunks[0]["text"][:500]
+    results = search(sample_text, n_results=5)
+    related, seen = [], {document_id}
+    for r in results:
+        rid = r["metadata"]["document_id"]
+        if rid not in seen:
+            seen.add(rid)
+            related.append({"filename": r["metadata"]["filename"], "document_id": rid, "snippet": r["text"][:150]})
+        if len(related) >= 3:
+            break
+    return {"related": related}
 
 @app.get("/documents/{document_id}/content")
 def get_document_content(document_id: str):
@@ -420,7 +482,15 @@ def upload_document(file: UploadFile = File(...)):
     extracted["filename"] = original_filename
 
     chunks = chunk_document(extracted, document_id=document_id, stored_filename=stored_filename)
-
+    if chunks and extracted.get("filetype") != ".zip":
+        sample = extracted.get("text", "")[:3000] if extracted["doc_type"] == "unstructured" else str(extracted.get("records", ""))[:3000]
+        summary = ask_ai(
+            f"Summarize this document in 1-2 short sentences (max 200 characters) — mention key names, numbers, and topics:\n\n{sample}",
+            system_instruction="You summarize documents for a search index. Be factual, extremely concise."
+        )
+        summary = summary.strip()[:200]  # hard cap — DB bloat na ho
+        for c in chunks:
+            c["document_summary"] = summary
     if not chunks:
         return {"status": "error", "message": "No content could be extracted from this file."}
 
@@ -446,7 +516,15 @@ def remove_document(document_id: str):
     if match and match.get("stored_filename"):
         file_path = os.path.join(UPLOAD_DIR, match["stored_filename"])
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except PermissionError:
+                import time
+                time.sleep(0.5)
+                try:
+                    os.remove(file_path)
+                except PermissionError:
+                    print(f"Could not delete {file_path} — file in use, skipping disk cleanup")
     log_action("delete", {"document_id": document_id, "filename": match["filename"] if match else None})
     return {"status": "success", "message": "Document removed"}
 
@@ -506,3 +584,25 @@ def email_ingest(uid: str):
 @app.get("/email/status")
 def email_status():
     return get_email_status()
+
+
+@app.post("/timeline/ask")
+def timeline_ask(req: AgentRequest):
+    if not os.path.exists(AUDIT_LOG_PATH):
+        return {"answer": "No history recorded yet."}
+    with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+        lines = f.readlines()[-30:]
+    log_text = "\n".join(lines)
+    prompt = f"""Below is a system activity log (JSON lines — timestamp, action, details).
+
+LOG:
+{log_text}
+
+Answer the user's question using ONLY this log. Be specific about dates and filenames.
+
+QUESTION: {req.message}
+
+ANSWER:"""
+    answer = ask_ai(prompt, provider=req.provider)
+    return {"answer": answer}
+

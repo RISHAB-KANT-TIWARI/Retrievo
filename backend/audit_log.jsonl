@@ -57,3 +57,40 @@
 {"time": "2026-09-26T18:35:18.712481+00:00", "action": "upload", "details": {"document_id": "2fd8fa44aa234275bdebfecf3a3c545b", "filename": "JEE MAIN SESSION 2 RESULT.pdf", "chunks": 1}}
 {"time": "2026-09-26T18:35:27.099106+00:00", "action": "upload", "details": {"document_id": "b7d3ebd38c2b465bbadc16a9356157b3", "filename": "sign.jpg", "chunks": 1}}
 {"time": "2026-09-27T05:28:43.941157+00:00", "action": "upload", "details": {"document_id": "7d479435a6ca488b9cbc1e72b6641123", "filename": "Shubham-Saini-Resume (1).docx", "chunks": 8}}
+{"time": "2026-10-01T05:13:38.173360+00:00", "action": "upload", "details": {"document_id": "86dc3f47055f453db5479717eed279da", "filename": "intro-networking-cheat-sheets.pdf", "chunks": 1}}
+{"time": "2026-10-01T08:24:02.702384+00:00", "action": "agent_delete", "details": {"document_ids": ["86dc3f47055f453db5479717eed279da"], "deleted": ["intro-networking-cheat-sheets.pdf"]}}
+{"time": "2026-10-02T05:02:47.250196+00:00", "action": "agent_delete", "details": {"document_ids": ["80afa05793034f8eae8ca51075cc20cc", "c7459a06927f42a580b9787e4c76dfbd", "136eb2a8d9284171a560fa55bff96ef0", "893476465eb74df082e45567db65db44"], "deleted": ["Equipment Specification Document.pdf"]}}
+{"time": "2026-10-02T05:10:47.031440+00:00", "action": "agent_delete", "details": {"document_ids": ["7d479435a6ca488b9cbc1e72b6641123"], "deleted": ["Shubham-Saini-Resume (1).docx"]}}
+{"time": "2026-10-02T05:11:27.620273+00:00", "action": "agent_delete", "details": {"document_ids": ["b7d3ebd38c2b465bbadc16a9356157b3"], "deleted": ["sign.jpg"]}}
+{"time": "2026-10-02T05:11:50.869602+00:00", "action": "agent_delete", "details": {"document_ids": ["e56fb63adb5d4118a867b93d987e54d1", "2fd8fa44aa234275bdebfecf3a3c545b"], "deleted": ["Vendor Submittal - Turbine Pump.pdf", "JEE MAIN SESSION 2 RESULT.pdf"]}}
+{"time": "2026-10-02T05:23:01.192275+00:00", "action": "upload", "details": {"document_id": "94a01dcb38c04565bf4b0716794b7dc9", "filename": "Equipment Specification Document.pdf", "chunks": 3}}
+{"time": "2026-10-02T05:23:14.083625+00:00", "action": "upload", "details": {"document_id": "3d416783de404c8f87c935058c625e81", "filename": "Procurement Schedule.pdf", "chunks": 1}}
+{"time": "2026-10-02T05:23:34.735740+00:00", "action": "upload", "details": {"document_id": "ef6e93aeaccb4a36b957ff9b20842ac3", "filename": "Vendor Submittal - Turbine Pump.pdf", "chunks": 1}}
+{"time": "2026-10-02T05:32:06.487614+00:00", "action": "upload", "details": {"document_id": "82704dde33e04c2399e60c517f387536", "filename": "A5 - BT CEM (2025-29) - Scheme and Syllabus wef 2025-26 Final.pdf", "chunks": 575}}
+{"time": "2026-10-02T05:33:33.849495+00:00", "action": "upload", "details": {"document_id": "398a509a9ef0417da8f73d3f308f3c05", "filename": "PyRAG_Problem_Statement.zip", "chunks": 18}}
+{"time": "2026-10-02T05:34:12.747648+00:00", "action": "upload", "details": {"document_id": "37464329f9fc4d2f8e80e0199398f119", "filename": "alphabet_dossier_part1.pdf", "chunks": 29}}
+{"time": "2026-10-02T05:37:31.694391+00:00", "action": "agent_delete", "details": {"deleted": ["PyRAG_Problem_Statement.zip"]}}
+{"time": "2026-10-02T06:19:19.208036+00:00", "action": "upload", "details": {"document_id": "554fb52ce2cb4aa5963edd5f2994f43b", "filename": "Shubham-Saini-Resume (1).docx", "chunks": 8}}
+{"time": "2026-10-02T07:17:03.606318+00:00", "action": "agent_delete", "details": {"deleted": ["Equipment Specification Document.pdf", "Procurement Schedule.pdf", "Vendor Submittal - Turbine Pump.pdf", "A5 - BT CEM (2025-29) - Scheme and Syllabus wef 2025-26 Final.pdf"]}}
+{"time": "2026-10-02T07:17:03.633070+00:00", "action": "agent_delete", "details": {"deleted": []}}
+{"time": "2026-10-02T07:17:35.708311+00:00", "action": "agent_delete", "details": {"deleted": ["alphabet_dossier_part1.pdf"]}}
+{"time": "2026-10-02T07:17:44.761954+00:00", "action": "delete", "details": {"document_id": "554fb52ce2cb4aa5963edd5f2994f43b", "filename": "Shubham-Saini-Resume (1).docx"}}
+{"time": "2026-10-02T07:20:30.244467+00:00", "action": "upload", "details": {"document_id": "a0247bd8c9c5416ea740a9970d166042", "filename": "alphabet_dossier_part1.pdf", "chunks": 29}}
+{"time": "2026-10-02T07:20:51.876481+00:00", "action": "upload", "details": {"document_id": "7eb87f9f92ff4776a9289b2e4c298152", "filename": "alphabet_dossier_part2.pdf", "chunks": 9}}
+{"time": "2026-10-02T07:21:14.897161+00:00", "action": "upload", "details": {"document_id": "c4ee591be61a4f18be9fa55c22927f56", "filename": "alphabet_dossier_part3_4.pdf", "chunks": 12}}
+{"time": "2026-10-02T07:21:33.987716+00:00", "action": "upload", "details": {"document_id": "de29d290d19c4411bfda0d6cf7d06ecd", "filename": "PyRAG_Problem_Statement.zip", "chunks": 18}}
+{"time": "2026-10-02T07:21:54.560156+00:00", "action": "upload", "details": {"document_id": "2ec6c0012bc3482387faad0ae5c638e1", "filename": "Shubham-Saini-Resume (1).docx", "chunks": 8}}
+{"time": "2026-10-02T07:24:21.180903+00:00", "action": "upload", "details": {"document_id": "40cde0899a694a8f9e609abb601856f9", "filename": "Equipment Specification Document.pdf", "chunks": 3}}
+{"time": "2026-10-02T07:24:36.220059+00:00", "action": "upload", "details": {"document_id": "33c66c334be94a739dd5847ac4dd770d", "filename": "Procurement Schedule.pdf", "chunks": 1}}
+{"time": "2026-10-02T07:24:55.312852+00:00", "action": "upload", "details": {"document_id": "afd18d9b7167483993605b264f3dc940", "filename": "Vendor Submittal - Turbine Pump.pdf", "chunks": 1}}
+{"time": "2026-10-02T07:26:06.044636+00:00", "action": "upload", "details": {"document_id": "dbb3194fe7814563ad5863a319317b39", "filename": "ET_AI_PROBLEMS_Submittal_1.pdf.pdf", "chunks": 5}}
+{"time": "2026-10-02T07:26:29.707415+00:00", "action": "upload", "details": {"document_id": "44c7354c0df044c8b8a3e488859f7ca7", "filename": "UPS_Procurement_Schedule.xlsx", "chunks": 14}}
+{"time": "2026-10-02T07:26:53.546922+00:00", "action": "upload", "details": {"document_id": "6bb691b4b3ed44e181a9c2b5cd7dcf33", "filename": "RISHAB KANT TIWARI - RESUME .pdf.docx - Google Docs.pdf", "chunks": 6}}
+{"time": "2026-10-02T07:48:42.593726+00:00", "action": "agent_delete", "details": {"deleted": ["Shubham-Saini-Resume (1).docx"]}}
+{"time": "2026-10-02T07:49:27.471744+00:00", "action": "upload", "details": {"document_id": "e687cbaf9c6847748af153f89f850142", "filename": "Shubham-Saini-Resume (1).docx", "chunks": 8}}
+{"time": "2026-10-02T14:38:43.182963+00:00", "action": "delete", "details": {"document_id": "6bb691b4b3ed44e181a9c2b5cd7dcf33", "filename": "RISHAB KANT TIWARI - RESUME .pdf.docx - Google Docs.pdf"}}
+{"time": "2026-10-02T14:39:04.737127+00:00", "action": "agent_delete", "details": {"deleted": ["ET_AI_PROBLEMS_Submittal_1.pdf.pdf", "UPS_Procurement_Schedule.xlsx", "Procurement Schedule.pdf"]}}
+{"time": "2026-10-03T03:21:30.956800+00:00", "action": "upload", "details": {"document_id": "ad99b415d2104532bac338e0f9c8fd2a", "filename": "CUET-UG-ADMIT-CARD.pdf", "chunks": 1}}
+{"time": "2026-10-03T03:25:32.878584+00:00", "action": "agent_delete", "details": {"deleted": ["CUET-UG-ADMIT-CARD.pdf", "Shubham-Saini-Resume (1).docx"]}}
+{"time": "2026-10-03T04:02:58.426360+00:00", "action": "upload", "details": {"document_id": "a444dff0a0cb45b49bf66a66931f0acd", "filename": "Shubham-Saini-Resume (1).docx", "chunks": 8}}
+{"time": "2026-10-03T04:32:54.205988+00:00", "action": "upload", "details": {"document_id": "a5737f36dbfa4b729fbae53fc44a68b7", "filename": "A5 - BT CEM (2025-29) - Scheme and Syllabus wef 2025-26 Final.pdf", "chunks": 575}}

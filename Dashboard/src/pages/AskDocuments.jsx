@@ -2,15 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import ChatMessage from "../components/ChatMessage";
 import ThinkingSkeleton from "../components/ThinkingSkeleton";
 import EmptyState from "../components/EmptyState";
+import { askQuestion, askImageQuestion, getDocuments, deleteDocument, agentAsk, agentDeleteConfirmed, getRelatedDocuments } from "../api/client";
 import Modal from "../components/Modal";
-import {
-  askQuestion,
-  askImageQuestion,
-  getDocuments,
-  deleteDocument,
-  agentAsk,
-  agentDeleteConfirmed,
-} from "../api/client";
 import { useToast } from "../components/Toast";
 
 const DOC_TYPES = ["All", "Specification", "Vendor Submittal", "RFI", "Procurement Schedule", "Email"];
@@ -25,6 +18,7 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   const [documents, setDocuments] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [relatedDocs, setRelatedDocs] = useState([]);
   const toast = useToast();
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -70,7 +64,12 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
   };
 
   const handleDocSelect = (e) => {
-    setSelectedDocId(e.target.value);
+    const id = e.target.value;
+    setSelectedDocId(id);
+    setRelatedDocs([]);
+    if (id) {
+      getRelatedDocuments(id).then((res) => setRelatedDocs(res.data.related || [])).catch(() => {});
+    }
   };
   const handleSend = async () => {
     const question = input.trim();
@@ -115,20 +114,21 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
       } else {
         // Agent path — handles typed delete-requests, auto-filename detection, and normal Q&A
         const res = await agentAsk(question, provider);
-
         if (res.data.type === "confirm_delete") {
           setPendingDelete(res.data.matched_documents);
+          const answerPrefix = res.data.answer ? `${res.data.answer}\n\n` : "";
           setMessages((prev) => [
             ...prev,
             {
               role: "ai",
-              text: `Confirm to Delete these files: ${res.data.matched_documents
+              text: `${answerPrefix}Confirm to Delete these files: ${res.data.matched_documents
                 .map((d) => d.filename)
                 .join(", ")}?`,
-              sources: [],
-            },
-          ]);
-        } else {
+                sources: [],
+              },
+            ]);
+          }
+          else {
           setMessages((prev) => [
             ...prev,
             {
@@ -214,6 +214,15 @@ export default function AskDocuments({ messages, setMessages, docType, setDocTyp
           >
             ✕
           </button>
+        </div>
+      )}
+      {relatedDocs.length > 0 && (
+        <div className="mb-3 flex gap-2 flex-wrap">
+          {relatedDocs.map((r) => (
+            <span key={r.document_id} className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-text-secondary">
+              Related: {r.filename}
+            </span>
+          ))}
         </div>
       )}
 
